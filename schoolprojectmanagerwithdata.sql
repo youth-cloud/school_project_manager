@@ -1,0 +1,563 @@
+/*
+ Navicat Premium Dump SQL
+
+ Source Server         : youthd
+ Source Server Type    : MySQL
+ Source Server Version : 80012 (8.0.12)
+ Source Host           : localhost:3306
+ Source Schema         : schoolprojectmanager
+
+ Target Server Type    : MySQL
+ Target Server Version : 80012 (8.0.12)
+ File Encoding         : 65001
+
+ Date: 07/06/2026 21:50:07
+*/
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for defense_record
+-- ----------------------------
+DROP TABLE IF EXISTS `defense_record`;
+CREATE TABLE `defense_record`  (
+  `id` bigint(20) NOT NULL COMMENT '答辩记录ID',
+  `schedule_id` bigint(20) NOT NULL COMMENT '答辩安排ID',
+  `teacher_id` bigint(20) NOT NULL COMMENT '教师ID',
+  `presentation_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '展示分',
+  `answer_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '问答分',
+  `completion_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '完成度分',
+  `total_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '总分',
+  `comment` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '评语',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_defense_record_schedule_id`(`schedule_id` ASC) USING BTREE,
+  INDEX `idx_defense_record_teacher_id`(`teacher_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '答辩记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of defense_record
+-- ----------------------------
+INSERT INTO `defense_record` VALUES (2063592444257501185, 2063589717657976834, 35, 30.00, 30.50, 29.00, 89.50, '修改后表现优秀，答辩通过。', '2026-06-07 20:02:33', '2026-06-07 20:07:44');
+
+-- ----------------------------
+-- Table structure for defense_schedule
+-- ----------------------------
+DROP TABLE IF EXISTS `defense_schedule`;
+CREATE TABLE `defense_schedule`  (
+  `id` bigint(20) NOT NULL COMMENT '答辩安排ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `group_id` bigint(20) NOT NULL COMMENT '项目组ID',
+  `defense_date` date NULL DEFAULT NULL COMMENT '答辩日期',
+  `defense_time` time NULL DEFAULT NULL COMMENT '答辩时间',
+  `location` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '答辩地点',
+  `order_no` int(11) NULL DEFAULT NULL COMMENT '答辩顺序',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1已安排 0未安排 2已完成',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_defense_schedule_batch_id`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_defense_schedule_group_id`(`group_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '答辩安排表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of defense_schedule
+-- ----------------------------
+INSERT INTO `defense_schedule` VALUES (2063589717657976834, 2062755007931305985, 2063247545389703170, '2026-07-01', '14:30:00', '实验楼A302', 2, 1, '2026-06-07 19:51:42', '2026-06-07 19:54:49', 0);
+
+-- ----------------------------
+-- Table structure for edu_class
+-- ----------------------------
+DROP TABLE IF EXISTS `edu_class`;
+CREATE TABLE `edu_class`  (
+  `id` bigint(20) NOT NULL COMMENT '班级ID',
+  `class_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '班级名称',
+  `major_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '专业名称',
+  `grade` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '年级',
+  `counselor_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '辅导员',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1正常 0停用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_edu_class_name`(`class_name` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '班级表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of edu_class
+-- ----------------------------
+INSERT INTO `edu_class` VALUES (1, '一个测试班级', '计算机科学与技术', '3', '孔xx', 1, '2026-06-04 23:10:35', '2026-06-04 23:10:35', 0);
+INSERT INTO `edu_class` VALUES (2062559209335439362, '软件工程2401-修改后', '软件工程', '2024', '王老师', 1, '2026-06-04 23:36:50', '2026-06-05 09:21:05', 1);
+
+-- ----------------------------
+-- Table structure for edu_course
+-- ----------------------------
+DROP TABLE IF EXISTS `edu_course`;
+CREATE TABLE `edu_course`  (
+  `id` bigint(20) NOT NULL COMMENT '课程ID',
+  `course_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '课程名称',
+  `course_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '课程编码',
+  `credit` decimal(4, 1) NULL DEFAULT NULL COMMENT '学分',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1正常 0停用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_edu_course_code`(`course_code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '课程表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of edu_course
+-- ----------------------------
+INSERT INTO `edu_course` VALUES (2, '一个测试课程', 'TEST002', 3.0, NULL, 1, '2026-06-05 12:33:28', '2026-06-05 12:33:28', 0);
+INSERT INTO `edu_course` VALUES (2062738831117283330, 'Java Web开发实训-修改后', 'JAVA002', 4.0, '课程备注已修改', 1, '2026-06-05 11:30:35', '2026-06-05 12:01:05', 1);
+
+-- ----------------------------
+-- Table structure for notice
+-- ----------------------------
+DROP TABLE IF EXISTS `notice`;
+CREATE TABLE `notice`  (
+  `id` bigint(20) NOT NULL COMMENT '公告ID',
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '标题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '内容',
+  `publisher_id` bigint(20) NOT NULL COMMENT '发布人ID',
+  `target_role` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '目标角色',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1已发布 0草稿 2下线',
+  `publish_time` datetime NULL DEFAULT NULL COMMENT '发布时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_notice_publisher_id`(`publisher_id` ASC) USING BTREE,
+  INDEX `idx_notice_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '公告表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of notice
+-- ----------------------------
+INSERT INTO `notice` VALUES (2063598045775687681, '第一阶段提交通知-更新版', '请各项目组于本周五前完成第一阶段成果提交。', 35, 'STUDENT', 1, '2026-06-07 20:00:00', '2026-06-07 20:24:48', '2026-06-07 20:30:17', 0);
+
+-- ----------------------------
+-- Table structure for operation_log
+-- ----------------------------
+DROP TABLE IF EXISTS `operation_log`;
+CREATE TABLE `operation_log`  (
+  `id` bigint(20) NOT NULL COMMENT '日志ID',
+  `module_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '模块名称',
+  `operation_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '操作类型',
+  `operator_id` bigint(20) NULL DEFAULT NULL COMMENT '操作人ID',
+  `request_method` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '请求方式',
+  `request_uri` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '请求地址',
+  `ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'IP地址',
+  `operation_desc` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作描述',
+  `result` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '操作结果',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_operation_log_operator_id`(`operator_id` ASC) USING BTREE,
+  INDEX `idx_operation_log_module_name`(`module_name` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '操作日志表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of operation_log
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for project_group
+-- ----------------------------
+DROP TABLE IF EXISTS `project_group`;
+CREATE TABLE `project_group`  (
+  `id` bigint(20) NOT NULL COMMENT '项目组ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `topic_id` bigint(20) NOT NULL COMMENT '课题ID',
+  `group_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '小组名称',
+  `leader_id` bigint(20) NOT NULL COMMENT '组长ID',
+  `teacher_id` bigint(20) NOT NULL COMMENT '指导教师ID',
+  `project_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '项目名称',
+  `project_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '项目简介',
+  `repo_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '代码仓库地址',
+  `deploy_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部署地址',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1正常 0解散 2已结项',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_project_group_batch_id`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_project_group_topic_id`(`topic_id` ASC) USING BTREE,
+  INDEX `idx_project_group_leader_id`(`leader_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '项目组表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of project_group
+-- ----------------------------
+INSERT INTO `project_group` VALUES (2063247545389703170, 2062755007931305985, 2062837498155278337, '第一开发小组-修改后', 50, 35, '实训管理平台升级版', '修改后的项目简介', 'https://github.com/youth-cloud/school_project_manager', 'http://your-domain.com', 1, '2026-06-06 21:12:02', '2026-06-06 21:25:28', 0);
+
+-- ----------------------------
+-- Table structure for project_group_member
+-- ----------------------------
+DROP TABLE IF EXISTS `project_group_member`;
+CREATE TABLE `project_group_member`  (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `group_id` bigint(20) NOT NULL COMMENT '项目组ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `is_leader` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否组长 1是 0否',
+  `join_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1正常 0退出',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_project_group_member_group_user`(`group_id` ASC, `user_id` ASC) USING BTREE,
+  INDEX `idx_project_group_member_user_id`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '项目组成员表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of project_group_member
+-- ----------------------------
+INSERT INTO `project_group_member` VALUES (2063261485482024962, 2063247545389703170, 35, 0, '2026-06-06 22:07:26', 1);
+INSERT INTO `project_group_member` VALUES (2063607542799859713, 2063247545389703170, 50, 1, '2026-06-07 21:02:32', 1);
+
+-- ----------------------------
+-- Table structure for project_topic
+-- ----------------------------
+DROP TABLE IF EXISTS `project_topic`;
+CREATE TABLE `project_topic`  (
+  `id` bigint(20) NOT NULL COMMENT '课题ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `teacher_id` bigint(20) NOT NULL COMMENT '发布教师ID',
+  `topic_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '课题名称',
+  `topic_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '课题描述',
+  `difficulty_level` tinyint(4) NULL DEFAULT 2 COMMENT '难度等级 1简单 2中等 3困难',
+  `tech_requirements` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '技术要求',
+  `max_members` int(11) NOT NULL DEFAULT 1 COMMENT '最大成员数',
+  `selected_count` int(11) NOT NULL DEFAULT 0 COMMENT '当前已选人数',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1可选 0关闭 2已满',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_project_topic_batch_id`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_project_topic_teacher_id`(`teacher_id` ASC) USING BTREE,
+  INDEX `idx_project_topic_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '课题表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of project_topic
+-- ----------------------------
+INSERT INTO `project_topic` VALUES (2062837498155278337, 2062755007931305985, 35, '实训管理平台课题-修改后', '修改后的课题说明', 2, 'Spring Boot、Vue3、MySQL', 5, 0, 1, '2026-06-05 18:02:39', '2026-06-05 18:33:09', 0);
+INSERT INTO `project_topic` VALUES (2063609831459528705, 2062755007931305985, 35, '基于Vue3和Spring Boot的实训管理平台优化课题', '完成系统模块优化、角色权限完善与前后端联调。', 2, 'Spring Boot、Vue3、MySQL、Redis', 5, 0, 1, '2026-06-07 21:11:38', '2026-06-07 21:11:38', 0);
+
+-- ----------------------------
+-- Table structure for review_record
+-- ----------------------------
+DROP TABLE IF EXISTS `review_record`;
+CREATE TABLE `review_record`  (
+  `id` bigint(20) NOT NULL COMMENT '审核记录ID',
+  `submission_id` bigint(20) NOT NULL COMMENT '提交记录ID',
+  `reviewer_id` bigint(20) NOT NULL COMMENT '审核人ID',
+  `review_result` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '审核结果',
+  `score` decimal(5, 2) NULL DEFAULT NULL COMMENT '分数',
+  `comment` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '审核评语',
+  `review_time` datetime NULL DEFAULT NULL COMMENT '审核时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_review_record_submission_id`(`submission_id` ASC) USING BTREE,
+  INDEX `idx_review_record_reviewer_id`(`reviewer_id` ASC) USING BTREE,
+  INDEX `idx_review_record_result`(`review_result` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '审核记录表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of review_record
+-- ----------------------------
+INSERT INTO `review_record` VALUES (2063581429537095681, 2063438735540133889, 35, 'APPROVED', 90.00, '修改后内容更完整，审核通过。', '2026-06-07 19:18:47', '2026-06-07 19:18:46');
+
+-- ----------------------------
+-- Table structure for score_record
+-- ----------------------------
+DROP TABLE IF EXISTS `score_record`;
+CREATE TABLE `score_record`  (
+  `id` bigint(20) NOT NULL COMMENT '成绩记录ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `group_id` bigint(20) NULL DEFAULT NULL COMMENT '项目组ID',
+  `student_id` bigint(20) NOT NULL COMMENT '学生ID',
+  `process_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '过程分',
+  `report_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '报告分',
+  `submission_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '材料分',
+  `defense_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '答辩分',
+  `final_score` decimal(5, 2) NULL DEFAULT NULL COMMENT '最终总分',
+  `grade_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '等级',
+  `remark` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_score_record_batch_student`(`batch_id` ASC, `student_id` ASC) USING BTREE,
+  INDEX `idx_score_record_group_id`(`group_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '成绩表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of score_record
+-- ----------------------------
+INSERT INTO `score_record` VALUES (2063595362545233921, 2062755007931305985, 2063247545389703170, 50, 30.00, 18.50, 19.00, 30.00, 97.50, 'A', '无敌了', '2026-06-07 20:14:08', '2026-06-07 20:17:42');
+
+-- ----------------------------
+-- Table structure for stage_submission
+-- ----------------------------
+DROP TABLE IF EXISTS `stage_submission`;
+CREATE TABLE `stage_submission`  (
+  `id` bigint(20) NOT NULL COMMENT '阶段提交ID',
+  `task_id` bigint(20) NOT NULL COMMENT '阶段任务ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `group_id` bigint(20) NOT NULL COMMENT '项目组ID',
+  `submitter_id` bigint(20) NOT NULL COMMENT '提交人ID',
+  `version_no` int(11) NOT NULL DEFAULT 1 COMMENT '版本号',
+  `summary` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '提交摘要',
+  `report_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '报告文本',
+  `repo_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库地址',
+  `deploy_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部署地址',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1已提交 0草稿 2已撤回',
+  `submit_time` datetime NULL DEFAULT NULL COMMENT '提交时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_stage_submission_task_id`(`task_id` ASC) USING BTREE,
+  INDEX `idx_stage_submission_batch_id`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_stage_submission_group_id`(`group_id` ASC) USING BTREE,
+  INDEX `idx_stage_submission_submitter_id`(`submitter_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '阶段提交表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of stage_submission
+-- ----------------------------
+INSERT INTO `stage_submission` VALUES (2063438735540133889, 2063271464540737537, 2062755007931305985, 2063247545389703170, 50, 2, '更新后的第一阶段提交内容', '补充了需求分析、原型设计和数据库结构说明。', 'https://github.com/youth-cloud/school_project_manager', 'http://localhost:5173', 1, '2026-06-07 09:51:46', '2026-06-07 09:51:46', '2026-06-07 10:03:57', 0);
+
+-- ----------------------------
+-- Table structure for stage_task
+-- ----------------------------
+DROP TABLE IF EXISTS `stage_task`;
+CREATE TABLE `stage_task`  (
+  `id` bigint(20) NOT NULL COMMENT '阶段任务ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '实训批次ID',
+  `teacher_id` bigint(20) NOT NULL COMMENT '教师ID',
+  `task_title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '任务标题',
+  `task_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '任务说明',
+  `stage_no` int(11) NOT NULL COMMENT '阶段序号',
+  `deadline` datetime NULL DEFAULT NULL COMMENT '截止时间',
+  `need_report` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否需要报告 1是 0否',
+  `need_source_code` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否需要源代码 1是 0否',
+  `need_pdf` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否需要PDF 1是 0否',
+  `need_screenshot` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否需要截图 1是 0否',
+  `need_demo_url` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否需要演示地址 1是 0否',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1启用 0停用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_stage_task_batch_id`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_stage_task_teacher_id`(`teacher_id` ASC) USING BTREE,
+  INDEX `idx_stage_task_stage_no`(`stage_no` ASC) USING BTREE,
+  INDEX `idx_stage_task_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '阶段任务表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of stage_task
+-- ----------------------------
+INSERT INTO `stage_task` VALUES (2063271464540737537, 2062755007931305985, 35, '第一阶段需求分析与原型设计-已更新', '补充需求分析、页面原型和数据库设计说明', 1, '2026-06-25 23:59:59', 1, 0, 1, 1, 0, 1, '2026-06-06 22:47:05', '2026-06-06 23:07:24', 0);
+INSERT INTO `stage_task` VALUES (2063608116215742465, 2062755007931305985, 35, 'asdf', '完成需求分析文档、功能清单和页面原型设计。', 2, '2026-06-20 23:59:59', 1, 0, 1, 1, 0, 1, '2026-06-07 21:04:49', '2026-06-07 21:04:49', 0);
+
+-- ----------------------------
+-- Table structure for submission_file
+-- ----------------------------
+DROP TABLE IF EXISTS `submission_file`;
+CREATE TABLE `submission_file`  (
+  `id` bigint(20) NOT NULL COMMENT '文件ID',
+  `submission_id` bigint(20) NOT NULL COMMENT '提交记录ID',
+  `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '存储文件名',
+  `original_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '原始文件名',
+  `file_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文件类型',
+  `file_size` bigint(20) NOT NULL DEFAULT 0 COMMENT '文件大小(字节)',
+  `file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '文件路径',
+  `file_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '访问地址',
+  `biz_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '业务类型',
+  `upload_user_id` bigint(20) NOT NULL COMMENT '上传人ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_submission_file_submission_id`(`submission_id` ASC) USING BTREE,
+  INDEX `idx_submission_file_upload_user_id`(`upload_user_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '提交文件表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of submission_file
+-- ----------------------------
+INSERT INTO `submission_file` VALUES (2063576620121661441, 2063438735540133889, 'report_20260607_002.pdf', '实训报告-修改版.pdf', 'REPORT_PDF', 307200, 'uploads/report/report_20260607_002.pdf', 'http://localhost:8080/uploads/report/report_20260607_002.pdf', 'REPORT', 50, '2026-06-07 18:59:40');
+
+-- ----------------------------
+-- Table structure for sys_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_role`;
+CREATE TABLE `sys_role`  (
+  `id` bigint(20) NOT NULL COMMENT '角色ID',
+  `role_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色编码',
+  `role_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '角色名称',
+  `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备注',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1正常 0禁用',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_sys_role_code`(`role_code` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_role
+-- ----------------------------
+INSERT INTO `sys_role` VALUES (1, 'ADMIN', '管理员', '系统管理员', 1, '2026-06-04 22:37:15', '2026-06-04 22:37:15');
+INSERT INTO `sys_role` VALUES (2, 'TEACHER', '教师', '实训指导教师', 1, '2026-06-04 22:37:15', '2026-06-04 22:37:15');
+INSERT INTO `sys_role` VALUES (3, 'STUDENT', '学生', '实训学生', 1, '2026-06-04 22:37:15', '2026-06-04 22:37:15');
+
+-- ----------------------------
+-- Table structure for sys_user
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user`;
+CREATE TABLE `sys_user`  (
+  `id` bigint(20) NOT NULL COMMENT '用户ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '登录账号',
+  `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '登录密码(加密后)',
+  `real_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '真实姓名',
+  `student_no` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '学号',
+  `teacher_no` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '工号',
+  `gender` char(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '性别 M男 F女',
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '手机号',
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '邮箱',
+  `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '头像地址',
+  `class_id` bigint(20) NULL DEFAULT NULL COMMENT '班级ID',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1正常 0禁用',
+  `last_login_time` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除 0未删 1已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_sys_user_username`(`username` ASC) USING BTREE,
+  UNIQUE INDEX `uk_sys_user_student_no`(`student_no` ASC) USING BTREE,
+  UNIQUE INDEX `uk_sys_user_teacher_no`(`teacher_no` ASC) USING BTREE,
+  INDEX `idx_sys_user_class_id`(`class_id` ASC) USING BTREE,
+  INDEX `idx_sys_user_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_user
+-- ----------------------------
+INSERT INTO `sys_user` VALUES (35, 'teacher1', 'teacher2', 'wangxiang', NULL, '20251111', 'M', '15044447777', 'suibian@123.com', NULL, 1, 1, NULL, '2026-06-05 18:01:51', '2026-06-05 18:01:51', 0);
+INSERT INTO `sys_user` VALUES (50, 'wang', 'wangwang', 'qwer', '202553xx', NULL, 'M', '17955556666', 'busuibian@126.com', NULL, 1, 1, NULL, '2026-06-06 20:18:11', '2026-06-06 20:18:11', 0);
+
+-- ----------------------------
+-- Table structure for sys_user_role
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_user_role`;
+CREATE TABLE `sys_user_role`  (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `role_id` bigint(20) NOT NULL COMMENT '角色ID',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_sys_user_role_user_role`(`user_id` ASC, `role_id` ASC) USING BTREE,
+  INDEX `idx_sys_user_role_role_id`(`role_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户角色关联表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_user_role
+-- ----------------------------
+INSERT INTO `sys_user_role` VALUES (1, 35, 2);
+INSERT INTO `sys_user_role` VALUES (2, 50, 3);
+
+-- ----------------------------
+-- Table structure for topic_application
+-- ----------------------------
+DROP TABLE IF EXISTS `topic_application`;
+CREATE TABLE `topic_application`  (
+  `id` bigint(20) NOT NULL COMMENT '申请ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `topic_id` bigint(20) NOT NULL COMMENT '课题ID',
+  `student_id` bigint(20) NOT NULL COMMENT '学生ID',
+  `apply_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '申请理由',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT '申请状态 PENDING APPROVED REJECTED CANCELED',
+  `review_time` datetime NULL DEFAULT NULL COMMENT '审核时间',
+  `reviewer_id` bigint(20) NULL DEFAULT NULL COMMENT '审核人ID',
+  `review_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '审核意见',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_topic_application_batch_id`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_topic_application_topic_id`(`topic_id` ASC) USING BTREE,
+  INDEX `idx_topic_application_student_id`(`student_id` ASC) USING BTREE,
+  INDEX `idx_topic_application_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '选题申请表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of topic_application
+-- ----------------------------
+INSERT INTO `topic_application` VALUES (2063234123860148225, 2062755007931305985, 2062837498155278337, 50, '我对这个课题方向比较熟悉，愿意负责后端开发部分。', 'APPROVED', '2026-06-06 20:24:53', 35, '选题理由充分，同意申请。', '2026-06-06 20:18:42', '2026-06-06 20:24:52');
+INSERT INTO `topic_application` VALUES (2063606921929621505, 2062755007931305985, 2062837498155278337, 50, '我对这个课题的技术方向比较熟悉，想申请参与。', 'APPROVED', '2026-06-07 21:01:49', 35, 'test。', '2026-06-07 21:00:04', '2026-06-07 21:01:48');
+
+-- ----------------------------
+-- Table structure for training_batch
+-- ----------------------------
+DROP TABLE IF EXISTS `training_batch`;
+CREATE TABLE `training_batch`  (
+  `id` bigint(20) NOT NULL COMMENT '批次ID',
+  `batch_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '批次名称',
+  `course_id` bigint(20) NOT NULL COMMENT '课程ID',
+  `teacher_id` bigint(20) NOT NULL COMMENT '教师ID',
+  `class_id` bigint(20) NOT NULL COMMENT '班级ID',
+  `term_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '学期名称',
+  `start_time` datetime NULL DEFAULT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
+  `defense_time` datetime NULL DEFAULT NULL COMMENT '答辩时间',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '批次说明',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1进行中 0未启用 2已结束',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_training_batch_course_id`(`course_id` ASC) USING BTREE,
+  INDEX `idx_training_batch_teacher_id`(`teacher_id` ASC) USING BTREE,
+  INDEX `idx_training_batch_class_id`(`class_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '实训批次表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of training_batch
+-- ----------------------------
+INSERT INTO `training_batch` VALUES (2062755007931305985, '2026春季Java实训批次', 2, 35, 1, '2025-2026-2', '2026-06-10 09:00:00', '2026-07-10 18:00:00', '2026-07-15 14:00:00', '用于测试的实训批次', 1, '2026-06-05 12:34:52', '2026-06-05 18:33:06', 0);
+
+-- ----------------------------
+-- Table structure for weekly_report
+-- ----------------------------
+DROP TABLE IF EXISTS `weekly_report`;
+CREATE TABLE `weekly_report`  (
+  `id` bigint(20) NOT NULL COMMENT '周报ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `group_id` bigint(20) NOT NULL COMMENT '项目组ID',
+  `student_id` bigint(20) NOT NULL COMMENT '学生ID',
+  `week_index` int(11) NOT NULL COMMENT '第几周',
+  `completed_work` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '已完成工作',
+  `problem_desc` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '问题描述',
+  `next_plan` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '下周计划',
+  `teacher_comment` varchar(1000) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '教师评语',
+  `score` decimal(5, 2) NULL DEFAULT NULL COMMENT '评分',
+  `submit_time` datetime NULL DEFAULT NULL COMMENT '提交时间',
+  `review_time` datetime NULL DEFAULT NULL COMMENT '审核时间',
+  `status` tinyint(4) NOT NULL DEFAULT 1 COMMENT '状态 1已提交 0草稿 2已点评',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(4) NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_weekly_report_batch_id`(`batch_id` ASC) USING BTREE,
+  INDEX `idx_weekly_report_group_id`(`group_id` ASC) USING BTREE,
+  INDEX `idx_weekly_report_student_id`(`student_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '周报表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of weekly_report
+-- ----------------------------
+INSERT INTO `weekly_report` VALUES (1, 1, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-06-07 19:35:03', '2026-06-07 19:35:10', 1);
+INSERT INTO `weekly_report` VALUES (2063584603337527298, 2062755007931305985, 2063247545389703170, 50, 2, '补充完成了需求分析、原型和部分接口开发', '文件上传模块还未接入真实上传', '继续完成审核和周报模块', '进度不错，继续推进', 88.50, '2026-06-07 19:31:24', NULL, 1, '2026-06-07 19:31:23', '2026-06-07 19:34:50', 0);
+
+SET FOREIGN_KEY_CHECKS = 1;

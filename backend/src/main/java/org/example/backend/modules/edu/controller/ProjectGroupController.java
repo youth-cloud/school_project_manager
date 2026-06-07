@@ -92,8 +92,14 @@ public class ProjectGroupController {
         if (sysUserService.getById(dto.getLeaderId()) == null) {
             return Result.fail(404, "组长不存在");
         }
+        if (!sysUserService.hasRole(dto.getLeaderId(), "STUDENT")) {
+            return Result.fail(400, "当前组长不是学生角色");
+        }
         if (sysUserService.getById(dto.getTeacherId()) == null) {
             return Result.fail(404, "指导教师不存在");
+        }
+        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
+            return Result.fail(400, "当前指导教师不是教师角色");
         }
 
         LambdaQueryWrapper<ProjectGroup> wrapper = Wrappers.lambdaQuery();
@@ -151,8 +157,14 @@ public class ProjectGroupController {
         if (sysUserService.getById(dto.getLeaderId()) == null) {
             return Result.fail(404, "组长不存在");
         }
+        if (!sysUserService.hasRole(dto.getLeaderId(), "STUDENT")) {
+            return Result.fail(400, "当前组长不是学生角色");
+        }
         if (sysUserService.getById(dto.getTeacherId()) == null) {
             return Result.fail(404, "指导教师不存在");
+        }
+        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
+            return Result.fail(400, "当前指导教师不是教师角色");
         }
 
         ProjectGroup projectGroup = new ProjectGroup();

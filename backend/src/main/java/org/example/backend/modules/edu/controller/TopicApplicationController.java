@@ -83,6 +83,9 @@ public class TopicApplicationController {
         if (sysUserService.getById(dto.getStudentId()) == null) {
             return Result.fail(404, "学生不存在");
         }
+        if (!sysUserService.hasRole(dto.getStudentId(), "STUDENT")) {
+            return Result.fail(400, "当前用户不是学生角色，不能申请选题");
+        }
 
         TopicApplication topicApplication = new TopicApplication();
         topicApplication.setBatchId(dto.getBatchId());
@@ -105,6 +108,9 @@ public class TopicApplicationController {
         }
         if (sysUserService.getById(dto.getReviewerId()) == null) {
             return Result.fail(404, "审核人不存在");
+        }
+        if (!sysUserService.hasRole(dto.getReviewerId(), "TEACHER")) {
+            return Result.fail(400, "当前用户不是教师角色，不能审核选题申请");
         }
 
         ProjectTopic projectTopic = projectTopicService.getById(existing.getTopicId());

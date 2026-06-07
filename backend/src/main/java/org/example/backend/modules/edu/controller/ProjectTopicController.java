@@ -73,6 +73,9 @@ public class ProjectTopicController {
         if (sysUserService.getById(dto.getTeacherId()) == null) {
             return Result.fail(404, "教师不存在");
         }
+        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
+            return Result.fail(400, "当前用户不是教师角色，不能发布课题");
+        }
         if (!dto.getTeacherId().equals(trainingBatch.getTeacherId())) {
             return Result.fail(400, "课题发布教师与实训批次教师不一致");
         }
@@ -113,6 +116,9 @@ public class ProjectTopicController {
         }
         if (sysUserService.getById(dto.getTeacherId()) == null) {
             return Result.fail(404, "教师不存在");
+        }
+        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
+            return Result.fail(400, "当前用户不是教师角色，不能修改课题");
         }
         if (!dto.getTeacherId().equals(trainingBatch.getTeacherId())) {
             return Result.fail(400, "课题发布教师与实训批次教师不一致");
