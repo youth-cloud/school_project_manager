@@ -76,6 +76,9 @@ public class TrainingBatchController {
         if (relationError != null) {
             return Result.fail(404, relationError);
         }
+        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
+            return Result.fail(400, "当前用户不是教师角色，不能作为实训批次教师");
+        }
         String timeError = validateTimeRange(dto.getStartTime(), dto.getEndTime(), dto.getDefenseTime());
         if (timeError != null) {
             return Result.fail(400, timeError);
@@ -114,6 +117,9 @@ public class TrainingBatchController {
         String relationError = validateRelatedIds(dto.getCourseId(), dto.getTeacherId(), dto.getClassId());
         if (relationError != null) {
             return Result.fail(404, relationError);
+        }
+        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
+            return Result.fail(400, "当前用户不是教师角色，不能作为实训批次教师");
         }
         String timeError = validateTimeRange(dto.getStartTime(), dto.getEndTime(), dto.getDefenseTime());
         if (timeError != null) {

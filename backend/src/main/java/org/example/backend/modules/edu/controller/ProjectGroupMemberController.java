@@ -67,6 +67,9 @@ public class ProjectGroupMemberController {
         if (sysUserService.getById(dto.getUserId()) == null) {
             return Result.fail(404, "用户不存在");
         }
+        if (!sysUserService.hasRole(dto.getUserId(), "STUDENT")) {
+            return Result.fail(400, "当前用户不是学生角色，不能加入项目组");
+        }
 
         LambdaQueryWrapper<ProjectGroupMember> wrapper = Wrappers.lambdaQuery();
         wrapper.eq(ProjectGroupMember::getGroupId, dto.getGroupId())
