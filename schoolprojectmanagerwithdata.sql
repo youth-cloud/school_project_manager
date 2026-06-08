@@ -11,7 +11,7 @@
  Target Server Version : 80012 (8.0.12)
  File Encoding         : 65001
 
- Date: 07/06/2026 21:50:07
+ Date: 08/06/2026 21:35:48
 */
 
 SET NAMES utf8mb4;
@@ -41,6 +41,8 @@ CREATE TABLE `defense_record`  (
 -- Records of defense_record
 -- ----------------------------
 INSERT INTO `defense_record` VALUES (2063592444257501185, 2063589717657976834, 35, 30.00, 30.50, 29.00, 89.50, '修改后表现优秀，答辩通过。', '2026-06-07 20:02:33', '2026-06-07 20:07:44');
+INSERT INTO `defense_record` VALUES (2063624811328303105, 2063589717657976834, 35, 30.00, 30.00, 29.00, 89.00, '回归测试：教师正常修改答辩记录。', '2026-06-07 22:11:09', '2026-06-07 22:11:42');
+INSERT INTO `defense_record` VALUES (2063970271637164033, 2063589717657976834, 35, 30.00, 29.50, 28.50, 88.00, '接口回归测试：教师正常登记答辩记录', '2026-06-08 21:03:54', '2026-06-08 21:03:54');
 
 -- ----------------------------
 -- Table structure for defense_schedule
@@ -67,6 +69,7 @@ CREATE TABLE `defense_schedule`  (
 -- Records of defense_schedule
 -- ----------------------------
 INSERT INTO `defense_schedule` VALUES (2063589717657976834, 2062755007931305985, 2063247545389703170, '2026-07-01', '14:30:00', '实验楼A302', 2, 1, '2026-06-07 19:51:42', '2026-06-07 19:54:49', 0);
+INSERT INTO `defense_schedule` VALUES (2063836462954528770, 2062755007931305985, 2063247545389703170, '2026-07-13', '16:00:00', '实训楼A103', 5, 1, '2026-06-08 12:12:11', '2026-06-08 12:14:05', 0);
 
 -- ----------------------------
 -- Table structure for edu_class
@@ -90,7 +93,7 @@ CREATE TABLE `edu_class`  (
 -- Records of edu_class
 -- ----------------------------
 INSERT INTO `edu_class` VALUES (1, '一个测试班级', '计算机科学与技术', '3', '孔xx', 1, '2026-06-04 23:10:35', '2026-06-04 23:10:35', 0);
-INSERT INTO `edu_class` VALUES (2062559209335439362, '软件工程2401-修改后', '软件工程', '2024', '王老师', 1, '2026-06-04 23:36:50', '2026-06-05 09:21:05', 1);
+INSERT INTO `edu_class` VALUES (2062559209335439362, '软件工程2401-修改后', '软件工程', '2024', '王老师', 1, '2026-06-04 23:36:50', '2026-06-08 11:53:56', 0);
 
 -- ----------------------------
 -- Table structure for edu_course
@@ -114,7 +117,7 @@ CREATE TABLE `edu_course`  (
 -- Records of edu_course
 -- ----------------------------
 INSERT INTO `edu_course` VALUES (2, '一个测试课程', 'TEST002', 3.0, NULL, 1, '2026-06-05 12:33:28', '2026-06-05 12:33:28', 0);
-INSERT INTO `edu_course` VALUES (2062738831117283330, 'Java Web开发实训-修改后', 'JAVA002', 4.0, '课程备注已修改', 1, '2026-06-05 11:30:35', '2026-06-05 12:01:05', 1);
+INSERT INTO `edu_course` VALUES (2062738831117283330, 'Java Web开发实训-修改后', 'JAVA002', 4.0, '课程备注已修改', 1, '2026-06-05 11:30:35', '2026-06-08 11:53:51', 0);
 
 -- ----------------------------
 -- Table structure for notice
@@ -139,7 +142,9 @@ CREATE TABLE `notice`  (
 -- ----------------------------
 -- Records of notice
 -- ----------------------------
-INSERT INTO `notice` VALUES (2063598045775687681, '第一阶段提交通知-更新版', '请各项目组于本周五前完成第一阶段成果提交。', 35, 'STUDENT', 1, '2026-06-07 20:00:00', '2026-06-07 20:24:48', '2026-06-07 20:30:17', 0);
+INSERT INTO `notice` VALUES (2063598045775687681, '第一阶段提交通知-回归测试更新', '验证更新公告时不传 publishTime 不会被清空。', 35, 'STUDENT', 1, '2026-06-07 20:00:00', '2026-06-07 20:24:48', '2026-06-07 22:09:56', 0);
+INSERT INTO `notice` VALUES (2063624298197151745, '回归测试公告-教师正常发布', '用于验证公告发布权限仍然正常。', 35, 'STUDENT', 1, '2026-06-07 22:09:08', '2026-06-07 22:09:07', '2026-06-07 22:09:07', 0);
+INSERT INTO `notice` VALUES (2063806917035606017, 'JWT阶段公告测试-教师修改后', '这是教师通过当前登录用户身份修改后的公告内容。', 35, 'STUDENT', 1, '2026-06-08 10:20:00', '2026-06-08 10:14:47', '2026-06-08 10:15:48', 0);
 
 -- ----------------------------
 -- Table structure for operation_log
@@ -164,6 +169,7 @@ CREATE TABLE `operation_log`  (
 -- ----------------------------
 -- Records of operation_log
 -- ----------------------------
+INSERT INTO `operation_log` VALUES (2063808574200954881, 'JWT测试模块-更新后', 'UPDATE', 35, 'PUT', '/api/operation-logs', '127.0.0.1', '测试修改时保留原操作人', 'SUCCESS', '2026-06-08 10:21:22');
 
 -- ----------------------------
 -- Table structure for project_group
@@ -269,7 +275,9 @@ CREATE TABLE `review_record`  (
 -- ----------------------------
 -- Records of review_record
 -- ----------------------------
-INSERT INTO `review_record` VALUES (2063581429537095681, 2063438735540133889, 35, 'APPROVED', 90.00, '修改后内容更完整，审核通过。', '2026-06-07 19:18:47', '2026-06-07 19:18:46');
+INSERT INTO `review_record` VALUES (2063581429537095681, 2063438735540133889, 35, 'APPROVED', 95.00, 'ReviewRecord 深层校验修改测试', '2026-06-07 19:18:47', '2026-06-07 19:18:46');
+INSERT INTO `review_record` VALUES (2063948751367979009, 2063438735540133889, 35, 'APPROVED', 92.00, 'ReviewRecord 深层校验正常新增测试', '2026-06-08 19:38:23', '2026-06-08 19:38:23');
+INSERT INTO `review_record` VALUES (2063970036303155201, 2063438735540133889, 35, 'APPROVED', 91.00, '接口回归测试：教师正常审核', '2026-06-08 21:02:58', '2026-06-08 21:02:58');
 
 -- ----------------------------
 -- Table structure for score_record
@@ -297,7 +305,7 @@ CREATE TABLE `score_record`  (
 -- ----------------------------
 -- Records of score_record
 -- ----------------------------
-INSERT INTO `score_record` VALUES (2063595362545233921, 2062755007931305985, 2063247545389703170, 50, 30.00, 18.50, 19.00, 30.00, 97.50, 'A', '无敌了', '2026-06-07 20:14:08', '2026-06-07 20:17:42');
+INSERT INTO `score_record` VALUES (2063595362545233921, 2062755007931305985, 2063247545389703170, 50, 93.00, 94.00, 95.00, 96.00, 94.50, 'A+', '接口回归测试：修改成绩记录', '2026-06-07 20:14:08', '2026-06-08 21:03:41');
 
 -- ----------------------------
 -- Table structure for stage_submission
@@ -329,7 +337,9 @@ CREATE TABLE `stage_submission`  (
 -- ----------------------------
 -- Records of stage_submission
 -- ----------------------------
-INSERT INTO `stage_submission` VALUES (2063438735540133889, 2063271464540737537, 2062755007931305985, 2063247545389703170, 50, 2, '更新后的第一阶段提交内容', '补充了需求分析、原型设计和数据库结构说明。', 'https://github.com/youth-cloud/school_project_manager', 'http://localhost:5173', 1, '2026-06-07 09:51:46', '2026-06-07 09:51:46', '2026-06-07 10:03:57', 0);
+INSERT INTO `stage_submission` VALUES (2063438735540133889, 2063271464540737537, 2062755007931305985, 2063247545389703170, 50, 2, '回归测试：更新现有阶段提交', '验证学生修改自己的阶段提交。', 'https://github.com/youth-cloud/school_project_manager', 'http://localhost:5173', 1, '2026-06-07 09:51:46', '2026-06-07 09:51:46', '2026-06-07 22:03:00', 0);
+INSERT INTO `stage_submission` VALUES (2063622448064491522, 2063271464540737537, 2062755007931305985, 2063247545389703170, 50, 99, '回归测试：学生新增阶段提交', '本次主要验证角色校验是否仍然有效。', 'https://github.com/youth-cloud/school_project_manager', 'http://localhost:5173', 1, '2026-06-07 22:01:47', '2026-06-07 22:01:46', '2026-06-07 22:01:46', 0);
+INSERT INTO `stage_submission` VALUES (2063969913389076482, 2063271464540737537, 2062755007931305985, 2063247545389703170, 50, 100, NULL, NULL, 'https://github.com/youth-cloud/school_project_manager', NULL, 1, '2026-06-08 21:02:29', '2026-06-08 21:02:28', '2026-06-08 21:02:28', 0);
 
 -- ----------------------------
 -- Table structure for stage_task
@@ -390,6 +400,7 @@ CREATE TABLE `submission_file`  (
 -- Records of submission_file
 -- ----------------------------
 INSERT INTO `submission_file` VALUES (2063576620121661441, 2063438735540133889, 'report_20260607_002.pdf', '实训报告-修改版.pdf', 'REPORT_PDF', 307200, 'uploads/report/report_20260607_002.pdf', 'http://localhost:8080/uploads/report/report_20260607_002.pdf', 'REPORT', 50, '2026-06-07 18:59:40');
+INSERT INTO `submission_file` VALUES (2063969981726871553, 2063438735540133889, 'regression_report.pdf', '回归测试报告.pdf', 'REPORT_PDF', 204800, 'uploads/report/regression_report.pdf', 'http://localhost:8080/uploads/report/regression_report.pdf', 'REPORT', 50, '2026-06-08 21:02:45');
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -446,8 +457,10 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (35, 'teacher1', 'teacher2', 'wangxiang', NULL, '20251111', 'M', '15044447777', 'suibian@123.com', NULL, 1, 1, NULL, '2026-06-05 18:01:51', '2026-06-05 18:01:51', 0);
-INSERT INTO `sys_user` VALUES (50, 'wang', 'wangwang', 'qwer', '202553xx', NULL, 'M', '17955556666', 'busuibian@126.com', NULL, 1, 1, NULL, '2026-06-06 20:18:11', '2026-06-06 20:18:11', 0);
+INSERT INTO `sys_user` VALUES (1, 'admin', '$2a$10$bqkvc6pJ1Fx2UHHL3lfxuewoYiDCT.0MQk5kZgA0FRrZqeAYgNhNW', 'testadmin', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, NULL, '2026-06-08 11:26:54', '2026-06-08 11:28:56', 0);
+INSERT INTO `sys_user` VALUES (35, 'teacher1', '$2a$10$n6a9BlXg9aaY6Jl5AqM6vOG/F5kMAKkRIJkuySCMUu.UxMpuq92hK', 'wangxiang', NULL, '20251111', 'M', '15044447777', 'suibian@123.com', NULL, 1, 1, NULL, '2026-06-05 18:01:51', '2026-06-08 11:14:40', 0);
+INSERT INTO `sys_user` VALUES (50, 'wang', '$2a$10$l6.1ksIBLQPNCCZobWCXJeRHqjrg0WJ9GqllI4TNEwghMBonUH5X.', 'qwer', '202553xx', NULL, 'M', '17955556666', 'busuibian@126.com', NULL, 1, 1, NULL, '2026-06-06 20:18:11', '2026-06-08 11:20:19', 0);
+INSERT INTO `sys_user` VALUES (51, 'zhao', '$2a$10$hitAJiTDHtb0jkTNNKB5ruicV1SeESvPE1y7V7OuRVldgTzBbALAe', 'zhaoss', '2025533x', NULL, 'F', NULL, NULL, NULL, 1, 1, NULL, '2026-06-08 11:30:12', '2026-06-08 11:30:22', 0);
 
 -- ----------------------------
 -- Table structure for sys_user_role
@@ -465,6 +478,7 @@ CREATE TABLE `sys_user_role`  (
 -- ----------------------------
 -- Records of sys_user_role
 -- ----------------------------
+INSERT INTO `sys_user_role` VALUES (3, 1, 1);
 INSERT INTO `sys_user_role` VALUES (1, 35, 2);
 INSERT INTO `sys_user_role` VALUES (2, 50, 3);
 
@@ -496,6 +510,7 @@ CREATE TABLE `topic_application`  (
 -- ----------------------------
 INSERT INTO `topic_application` VALUES (2063234123860148225, 2062755007931305985, 2062837498155278337, 50, '我对这个课题方向比较熟悉，愿意负责后端开发部分。', 'APPROVED', '2026-06-06 20:24:53', 35, '选题理由充分，同意申请。', '2026-06-06 20:18:42', '2026-06-06 20:24:52');
 INSERT INTO `topic_application` VALUES (2063606921929621505, 2062755007931305985, 2062837498155278337, 50, '我对这个课题的技术方向比较熟悉，想申请参与。', 'APPROVED', '2026-06-07 21:01:49', 35, 'test。', '2026-06-07 21:00:04', '2026-06-07 21:01:48');
+INSERT INTO `topic_application` VALUES (2063620613949878273, 2062755007931305985, 2063609831459528705, 50, '回归测试：学生正常申请新课题。', 'APPROVED', '2026-06-07 21:58:53', 35, '回归测试：教师正常审核通过。', '2026-06-07 21:54:29', '2026-06-07 21:58:52');
 
 -- ----------------------------
 -- Table structure for training_batch
@@ -526,6 +541,8 @@ CREATE TABLE `training_batch`  (
 -- Records of training_batch
 -- ----------------------------
 INSERT INTO `training_batch` VALUES (2062755007931305985, '2026春季Java实训批次', 2, 35, 1, '2025-2026-2', '2026-06-10 09:00:00', '2026-07-10 18:00:00', '2026-07-15 14:00:00', '用于测试的实训批次', 1, '2026-06-05 12:34:52', '2026-06-05 18:33:06', 0);
+INSERT INTO `training_batch` VALUES (2063625137842286594, '回归测试批次-教师合法-已更新', 2, 35, 1, '2025-2026-2', '2026-06-12 09:00:00', '2026-07-12 18:00:00', '2026-07-16 14:00:00', '回归测试：教师身份合法时修改批次。', 1, '2026-06-07 22:12:27', '2026-06-07 22:13:18', 0);
+INSERT INTO `training_batch` VALUES (2063831985245573122, '教师自建批次测试', 2062738831117283330, 35, 2062559209335439362, '2025-2026-2', '2026-06-20 09:00:00', '2026-07-20 18:00:00', '2026-07-22 14:00:00', '方案B测试：教师创建绑定给自己的批次', 1, '2026-06-08 11:54:24', '2026-06-08 11:54:24', 0);
 
 -- ----------------------------
 -- Table structure for weekly_report
@@ -558,6 +575,9 @@ CREATE TABLE `weekly_report`  (
 -- Records of weekly_report
 -- ----------------------------
 INSERT INTO `weekly_report` VALUES (1, 1, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, '2026-06-07 19:35:03', '2026-06-07 19:35:10', 1);
-INSERT INTO `weekly_report` VALUES (2063584603337527298, 2062755007931305985, 2063247545389703170, 50, 2, '补充完成了需求分析、原型和部分接口开发', '文件上传模块还未接入真实上传', '继续完成审核和周报模块', '进度不错，继续推进', 88.50, '2026-06-07 19:31:24', NULL, 1, '2026-06-07 19:31:23', '2026-06-07 19:34:50', 0);
+INSERT INTO `weekly_report` VALUES (2063584603337527298, 2062755007931305985, 2063247545389703170, 50, 2, '更新后的周报内容：补完 WeeklyReport 深层校验测试', '暂时没有新问题', '继续推进下一模块', '进度不错，继续推进', 88.50, '2026-06-07 19:31:24', NULL, 1, '2026-06-07 19:31:23', '2026-06-08 19:46:59', 0);
+INSERT INTO `weekly_report` VALUES (2063623162962636801, 2062755007931305985, 2063247545389703170, 50, 99, '尝试注入教师字段', '测试 teacherComment / score', '继续', NULL, NULL, '2026-06-07 22:04:37', NULL, 1, '2026-06-07 22:04:36', '2026-06-07 22:08:09', 0);
+INSERT INTO `weekly_report` VALUES (2063950798163177473, 2062755007931305985, 2063247545389703170, 50, 3, '完成了周报深层校验联调', '暂无阻塞问题', '继续推进下一批权限补强', NULL, NULL, '2026-06-08 19:46:31', NULL, 1, '2026-06-08 19:46:31', '2026-06-08 19:46:31', 0);
+INSERT INTO `weekly_report` VALUES (2063969648917237761, 2062755007931305985, 2063247545389703170, 50, 8, '接口回归测试：新增周报', '暂无', '继续做整轮回归', NULL, NULL, '2026-06-08 21:01:26', NULL, 1, '2026-06-08 21:01:25', '2026-06-08 21:01:25', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;

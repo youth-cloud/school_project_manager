@@ -12,9 +12,6 @@ public class TopicApplicationCreateDTO {
     @NotNull(message = "课题ID不能为空")
     private Long topicId;
 
-    @NotNull(message = "学生ID不能为空")
-    private Long studentId;
-
     @Size(max = 500, message = "申请理由长度不能超过500")
     private String applyReason;
 }

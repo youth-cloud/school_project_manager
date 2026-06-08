@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import org.example.backend.common.result.Result;
+import org.example.backend.modules.auth.security.LoginUserPrincipal;
+import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.edu.dto.OperationLogCreateDTO;
 import org.example.backend.modules.edu.dto.OperationLogPageQueryDTO;
 import org.example.backend.modules.edu.dto.OperationLogUpdateDTO;
@@ -30,11 +32,24 @@ public class OperationLogController {
 
     @GetMapping
     public Result<List<OperationLog>> findAll() {
-        return Result.success(operationLogService.list());
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
+
+        LambdaQueryWrapper<OperationLog> wrapper = Wrappers.lambdaQuery();
+        applyOperationLogViewScope(wrapper, currentUser);
+        wrapper.orderByDesc(OperationLog::getCreateTime);
+        return Result.success(operationLogService.list(wrapper));
     }
 
     @GetMapping("/page")
     public Result<Page<OperationLog>> page(@Valid @ModelAttribute OperationLogPageQueryDTO query) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
+
         Page<OperationLog> page = Page.of(query.getCurrent(), query.getSize());
         LambdaQueryWrapper<OperationLog> wrapper = Wrappers.lambdaQuery();
 
@@ -51,20 +66,22 @@ public class OperationLogController {
             wrapper.eq(OperationLog::getResult, query.getResult());
         }
 
+        applyOperationLogViewScope(wrapper, currentUser);
         wrapper.orderByDesc(OperationLog::getCreateTime);
         return Result.success(operationLogService.page(page, wrapper));
     }
 
     @PostMapping
     public Result<OperationLog> create(@Valid @RequestBody OperationLogCreateDTO dto) {
-        if (dto.getOperatorId() != null && sysUserService.getById(dto.getOperatorId()) == null) {
-            return Result.fail(404, "操作人不存在");
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
         }
 
         OperationLog operationLog = new OperationLog();
         operationLog.setModuleName(dto.getModuleName());
         operationLog.setOperationType(dto.getOperationType());
-        operationLog.setOperatorId(dto.getOperatorId());
+        operationLog.setOperatorId(currentUser.getUserId());
         operationLog.setRequestMethod(dto.getRequestMethod());
         operationLog.setRequestUri(dto.getRequestUri());
         operationLog.setIp(dto.getIp());
@@ -76,9 +93,17 @@ public class OperationLogController {
 
     @GetMapping("/{id}")
     public Result<OperationLog> findById(@PathVariable Long id) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
+
         OperationLog operationLog = operationLogService.getById(id);
         if (operationLog == null) {
             return Result.fail(404, "操作日志不存在");
+        }
+        if (!canViewOperationLog(currentUser, operationLog)) {
+            return Result.fail(403, "当前用户无权查看该操作日志");
         }
         return Result.success(operationLog);
     }
@@ -90,15 +115,11 @@ public class OperationLogController {
             return Result.fail(404, "操作日志不存在");
         }
 
-        if (dto.getOperatorId() != null && sysUserService.getById(dto.getOperatorId()) == null) {
-            return Result.fail(404, "操作人不存在");
-        }
-
         OperationLog operationLog = new OperationLog();
         operationLog.setId(dto.getId());
         operationLog.setModuleName(dto.getModuleName());
         operationLog.setOperationType(dto.getOperationType());
-        operationLog.setOperatorId(dto.getOperatorId());
+        operationLog.setOperatorId(existing.getOperatorId());
         operationLog.setRequestMethod(dto.getRequestMethod());
         operationLog.setRequestUri(dto.getRequestUri());
         operationLog.setIp(dto.getIp());
@@ -115,5 +136,23 @@ public class OperationLogController {
             return Result.fail(404, "操作日志不存在");
         }
         return Result.success(operationLogService.removeById(id));
+    }
+
+    private void applyOperationLogViewScope(LambdaQueryWrapper<OperationLog> wrapper, LoginUserPrincipal currentUser) {
+        if (hasRole(currentUser, "ADMIN")) {
+            return;
+        }
+        wrapper.eq(OperationLog::getOperatorId, currentUser.getUserId());
+    }
+
+    private boolean canViewOperationLog(LoginUserPrincipal currentUser, OperationLog operationLog) {
+        return hasRole(currentUser, "ADMIN") || currentUser.getUserId().equals(operationLog.getOperatorId());
+    }
+
+    private boolean hasRole(LoginUserPrincipal currentUser, String roleCode) {
+        if (currentUser == null || currentUser.getUserId() == null) {
+            return false;
+        }
+        return sysUserService.hasRole(currentUser.getUserId(), roleCode);
     }
 }

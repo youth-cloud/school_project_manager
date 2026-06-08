@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtTokenUtil {
@@ -21,12 +22,18 @@ public class JwtTokenUtil {
     private Long expiration;
 
     public String generateToken(Long userId, String username) {
+        return generateToken(userId, username, 0L);
+    }
+
+    public String generateToken(Long userId, String username, Long tokenVersion) {
         Date now = new Date();
         Date expireDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(username)
                 .claim("userId", userId)
+                .claim("tokenVersion", tokenVersion == null ? 0L : tokenVersion)
                 .issuedAt(now)
                 .expiration(expireDate)
                 .signWith(getSignKey())
@@ -50,6 +57,28 @@ public class JwtTokenUtil {
 
     public String getUsernameFromToken(String token) {
         return getClaims(token).getSubject();
+    }
+
+    public String getTokenIdFromToken(String token) {
+        return getClaims(token).getId();
+    }
+
+    public Long getTokenVersionFromToken(String token) {
+        Object tokenVersion = getClaims(token).get("tokenVersion");
+        if (tokenVersion instanceof Integer integerTokenVersion) {
+            return integerTokenVersion.longValue();
+        }
+        if (tokenVersion instanceof Long longTokenVersion) {
+            return longTokenVersion;
+        }
+        if (tokenVersion instanceof String stringTokenVersion) {
+            return Long.parseLong(stringTokenVersion);
+        }
+        return 0L;
+    }
+
+    public long getRemainingExpiration(String token) {
+        return getClaims(token).getExpiration().getTime() - System.currentTimeMillis();
     }
 
     public boolean isTokenExpired(String token) {

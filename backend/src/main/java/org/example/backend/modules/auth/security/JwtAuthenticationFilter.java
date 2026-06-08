@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.example.backend.common.jwt.JwtTokenUtil;
 import org.example.backend.modules.system.entity.SysUser;
 import org.example.backend.modules.system.service.SysUserService;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,16 +16,23 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private static final String TOKEN_VERSION_KEY_PREFIX = "auth:token:version:";
+    private static final String TOKEN_BLACKLIST_KEY_PREFIX = "auth:token:blacklist:";
 
     private final JwtTokenUtil jwtTokenUtil;
     private final SysUserService sysUserService;
+    private final StringRedisTemplate stringRedisTemplate;
 
-    public JwtAuthenticationFilter(JwtTokenUtil jwtTokenUtil, SysUserService sysUserService) {
+    public JwtAuthenticationFilter(JwtTokenUtil jwtTokenUtil,
+                                   SysUserService sysUserService,
+                                   StringRedisTemplate stringRedisTemplate) {
         this.jwtTokenUtil = jwtTokenUtil;
         this.sysUserService = sysUserService;
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     @Override
@@ -47,8 +55,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         Long userId = jwtTokenUtil.getUserIdFromToken(token);
         String username = jwtTokenUtil.getUsernameFromToken(token);
+        String tokenId = jwtTokenUtil.getTokenIdFromToken(token);
+        Long tokenVersion = jwtTokenUtil.getTokenVersionFromToken(token);
+        if (tokenId == null || Boolean.TRUE.equals(stringRedisTemplate.hasKey(TOKEN_BLACKLIST_KEY_PREFIX + tokenId))) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         SysUser sysUser = userId != null ? sysUserService.getById(userId) : null;
         if (sysUser == null || !Integer.valueOf(1).equals(sysUser.getStatus())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String currentVersionValue = stringRedisTemplate.opsForValue().get(TOKEN_VERSION_KEY_PREFIX + userId);
+        Long currentTokenVersion = currentVersionValue == null ? 0L : Long.parseLong(currentVersionValue);
+        if (!Objects.equals(tokenVersion, currentTokenVersion)) {
             filterChain.doFilter(request, response);
             return;
         }

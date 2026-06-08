@@ -16,9 +16,6 @@ public class ReviewRecordUpdateDTO {
     @NotNull(message = "阶段提交ID不能为空")
     private Long submissionId;
 
-    @NotNull(message = "审核人ID不能为空")
-    private Long reviewerId;
-
     @NotBlank(message = "审核结果不能为空")
     @Size(max = 30, message = "审核结果长度不能超过30")
     private String reviewResult;
