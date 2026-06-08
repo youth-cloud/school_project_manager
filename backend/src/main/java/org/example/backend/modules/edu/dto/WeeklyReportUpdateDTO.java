@@ -1,7 +1,6 @@
 package org.example.backend.modules.edu.dto;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -14,9 +13,6 @@ public class WeeklyReportUpdateDTO {
 
     @NotNull(message = "项目组ID不能为空")
     private Long groupId;
-
-    @NotNull(message = "学生ID不能为空")
-    private Long studentId;
 
     @NotNull(message = "周次不能为空")
     private Integer weekIndex;

@@ -37,7 +37,4 @@ public class SubmissionFileUpdateDTO {
 
     @Size(max = 50, message = "业务类型长度不能超过50")
     private String bizType;
-
-    @NotNull(message = "上传人ID不能为空")
-    private Long uploadUserId;
 }

@@ -5,11 +5,17 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.validation.Valid;
 import org.example.backend.common.result.Result;
+import org.example.backend.modules.auth.security.LoginUserPrincipal;
+import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.edu.dto.StageTaskCreateDTO;
 import org.example.backend.modules.edu.dto.StageTaskPageQueryDTO;
 import org.example.backend.modules.edu.dto.StageTaskUpdateDTO;
+import org.example.backend.modules.edu.entity.ProjectGroup;
+import org.example.backend.modules.edu.entity.ProjectGroupMember;
 import org.example.backend.modules.edu.entity.StageTask;
 import org.example.backend.modules.edu.entity.TrainingBatch;
+import org.example.backend.modules.edu.service.ProjectGroupMemberService;
+import org.example.backend.modules.edu.service.ProjectGroupService;
 import org.example.backend.modules.edu.service.StageTaskService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
 import org.example.backend.modules.system.service.SysUserService;
@@ -17,29 +23,47 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/stage-tasks")
 public class StageTaskController {
     private final StageTaskService stageTaskService;
     private final TrainingBatchService trainingBatchService;
+    private final ProjectGroupService projectGroupService;
+    private final ProjectGroupMemberService projectGroupMemberService;
     private final SysUserService sysUserService;
 
     public StageTaskController(StageTaskService stageTaskService,
                                TrainingBatchService trainingBatchService,
+                               ProjectGroupService projectGroupService,
+                               ProjectGroupMemberService projectGroupMemberService,
                                SysUserService sysUserService) {
         this.stageTaskService = stageTaskService;
         this.trainingBatchService = trainingBatchService;
+        this.projectGroupService = projectGroupService;
+        this.projectGroupMemberService = projectGroupMemberService;
         this.sysUserService = sysUserService;
     }
 
     @GetMapping
     public Result<List<StageTask>> findAll() {
-        return Result.success(stageTaskService.list());
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
+        LambdaQueryWrapper<StageTask> wrapper = Wrappers.lambdaQuery();
+        applyStageTaskViewScope(wrapper, currentUser);
+        wrapper.orderByDesc(StageTask::getCreateTime);
+        return Result.success(stageTaskService.list(wrapper));
     }
 
     @GetMapping("/page")
     public Result<Page<StageTask>> page(@Valid @ModelAttribute StageTaskPageQueryDTO query) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
         Page<StageTask> page = Page.of(query.getCurrent(), query.getSize());
         LambdaQueryWrapper<StageTask> wrapper = Wrappers.lambdaQuery();
 
@@ -59,24 +83,27 @@ public class StageTaskController {
             wrapper.eq(StageTask::getStatus, query.getStatus());
         }
 
+        applyStageTaskViewScope(wrapper, currentUser);
         wrapper.orderByDesc(StageTask::getCreateTime);
         return Result.success(stageTaskService.page(page, wrapper));
     }
 
     @PostMapping
     public Result<StageTask> create(@Valid @RequestBody StageTaskCreateDTO dto) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
+        if (!sysUserService.hasRole(currentUser.getUserId(), "TEACHER")) {
+            return Result.fail(403, "当前用户不是教师角色，不能发布阶段任务");
+        }
+
         TrainingBatch trainingBatch = trainingBatchService.getById(dto.getBatchId());
         if (trainingBatch == null) {
             return Result.fail(404, "实训批次不存在");
         }
-        if (sysUserService.getById(dto.getTeacherId()) == null) {
-            return Result.fail(404, "教师不存在");
-        }
-        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
-            return Result.fail(400, "当前用户不是教师角色，不能发布阶段任务");
-        }
-        if (!dto.getTeacherId().equals(trainingBatch.getTeacherId())) {
-            return Result.fail(400, "教师与实训批次绑定教师不一致");
+        if (!currentUser.getUserId().equals(trainingBatch.getTeacherId())) {
+            return Result.fail(403, "当前教师不是该实训批次绑定教师，不能发布阶段任务");
         }
 
         LambdaQueryWrapper<StageTask> wrapper = Wrappers.lambdaQuery();
@@ -88,7 +115,7 @@ public class StageTaskController {
 
         StageTask stageTask = new StageTask();
         stageTask.setBatchId(dto.getBatchId());
-        stageTask.setTeacherId(dto.getTeacherId());
+        stageTask.setTeacherId(currentUser.getUserId());
         stageTask.setTaskTitle(dto.getTaskTitle());
         stageTask.setTaskDescription(dto.getTaskDescription());
         stageTask.setStageNo(dto.getStageNo());
@@ -105,15 +132,30 @@ public class StageTaskController {
 
     @GetMapping("/{id}")
     public Result<StageTask> findById(@PathVariable Long id) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
         StageTask stageTask = stageTaskService.getById(id);
         if (stageTask == null) {
             return Result.fail(404, "阶段任务不存在");
+        }
+        if (!canViewStageTask(currentUser, stageTask)) {
+            return Result.fail(403, "当前用户无权查看该阶段任务");
         }
         return Result.success(stageTask);
     }
 
     @PutMapping
     public Result<StageTask> update(@Valid @RequestBody StageTaskUpdateDTO dto) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
+        if (!sysUserService.hasRole(currentUser.getUserId(), "TEACHER")) {
+            return Result.fail(403, "当前用户不是教师角色，不能修改阶段任务");
+        }
+
         StageTask existing = stageTaskService.getById(dto.getId());
         if (existing == null) {
             return Result.fail(404, "阶段任务不存在");
@@ -123,14 +165,8 @@ public class StageTaskController {
         if (trainingBatch == null) {
             return Result.fail(404, "实训批次不存在");
         }
-        if (sysUserService.getById(dto.getTeacherId()) == null) {
-            return Result.fail(404, "教师不存在");
-        }
-        if (!sysUserService.hasRole(dto.getTeacherId(), "TEACHER")) {
-            return Result.fail(400, "当前用户不是教师角色，不能修改阶段任务");
-        }
-        if (!dto.getTeacherId().equals(trainingBatch.getTeacherId())) {
-            return Result.fail(400, "教师与实训批次绑定教师不一致");
+        if (!currentUser.getUserId().equals(trainingBatch.getTeacherId())) {
+            return Result.fail(403, "当前教师不是该实训批次绑定教师，不能修改阶段任务");
         }
 
         LambdaQueryWrapper<StageTask> wrapper = Wrappers.lambdaQuery();
@@ -144,7 +180,7 @@ public class StageTaskController {
         StageTask stageTask = new StageTask();
         stageTask.setId(dto.getId());
         stageTask.setBatchId(dto.getBatchId());
-        stageTask.setTeacherId(dto.getTeacherId());
+        stageTask.setTeacherId(existing.getTeacherId());
         stageTask.setTaskTitle(dto.getTaskTitle());
         stageTask.setTaskDescription(dto.getTaskDescription());
         stageTask.setStageNo(dto.getStageNo());
@@ -161,10 +197,74 @@ public class StageTaskController {
 
     @DeleteMapping("/{id}")
     public Result<Boolean> deleteById(@PathVariable Long id) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
         StageTask existing = stageTaskService.getById(id);
         if (existing == null) {
             return Result.fail(404, "阶段任务不存在");
         }
+        if (hasRole(currentUser, "ADMIN")) {
+            return Result.success(stageTaskService.removeById(id));
+        }
+        if (!hasRole(currentUser, "TEACHER")) {
+            return Result.fail(403, "当前用户没有删除阶段任务的权限");
+        }
+        TrainingBatch trainingBatch = trainingBatchService.getById(existing.getBatchId());
+        if (trainingBatch == null) {
+            return Result.fail(404, "关联实训批次不存在");
+        }
+        if (!currentUser.getUserId().equals(trainingBatch.getTeacherId())) {
+            return Result.fail(403, "当前教师不是该实训批次绑定教师，不能删除阶段任务");
+        }
         return Result.success(stageTaskService.removeById(id));
+    }
+
+    private void applyStageTaskViewScope(LambdaQueryWrapper<StageTask> wrapper, LoginUserPrincipal currentUser) {
+        if (hasRole(currentUser, "ADMIN")) {
+            return;
+        }
+        if (hasRole(currentUser, "TEACHER")) {
+            wrapper.eq(StageTask::getTeacherId, currentUser.getUserId());
+            return;
+        }
+        List<Long> groupIds = projectGroupMemberService.list(Wrappers.<ProjectGroupMember>lambdaQuery()
+                        .eq(ProjectGroupMember::getUserId, currentUser.getUserId()))
+                .stream().map(ProjectGroupMember::getGroupId).collect(Collectors.toList());
+        if (groupIds.isEmpty()) {
+            wrapper.eq(StageTask::getId, -1L);
+            return;
+        }
+        List<Long> batchIds = projectGroupService.list(Wrappers.<ProjectGroup>lambdaQuery()
+                        .in(ProjectGroup::getId, groupIds))
+                .stream().map(ProjectGroup::getBatchId).distinct().collect(Collectors.toList());
+        if (batchIds.isEmpty()) {
+            wrapper.eq(StageTask::getId, -1L);
+            return;
+        }
+        wrapper.in(StageTask::getBatchId, batchIds);
+    }
+
+    private boolean canViewStageTask(LoginUserPrincipal currentUser, StageTask stageTask) {
+        if (currentUser == null || currentUser.getUserId() == null || stageTask == null) {
+            return false;
+        }
+        if (hasRole(currentUser, "ADMIN")) {
+            return true;
+        }
+        if (hasRole(currentUser, "TEACHER")) {
+            return currentUser.getUserId().equals(stageTask.getTeacherId());
+        }
+        return projectGroupMemberService.count(Wrappers.<ProjectGroupMember>lambdaQuery()
+                .eq(ProjectGroupMember::getUserId, currentUser.getUserId())
+                .exists("select 1 from project_group pg where pg.id = group_id and pg.batch_id = {0}", stageTask.getBatchId())) > 0;
+    }
+
+    private boolean hasRole(LoginUserPrincipal currentUser, String roleCode) {
+        if (currentUser == null || currentUser.getUserId() == null) {
+            return false;
+        }
+        return sysUserService.hasRole(currentUser.getUserId(), roleCode);
     }
 }

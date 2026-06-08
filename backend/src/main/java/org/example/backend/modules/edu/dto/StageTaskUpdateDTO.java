@@ -15,9 +15,6 @@ public class StageTaskUpdateDTO {
     @NotNull(message = "实训批次ID不能为空")
     private Long batchId;
 
-    @NotNull(message = "教师ID不能为空")
-    private Long teacherId;
-
     @NotBlank(message = "任务标题不能为空")
     @Size(max = 200, message = "任务标题长度不能超过200")
     private String taskTitle;

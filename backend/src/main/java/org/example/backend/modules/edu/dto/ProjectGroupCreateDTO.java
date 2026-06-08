@@ -20,9 +20,6 @@ public class ProjectGroupCreateDTO {
     @NotNull(message = "组长ID不能为空")
     private Long leaderId;
 
-    @NotNull(message = "指导教师ID不能为空")
-    private Long teacherId;
-
     @Size(max = 200, message = "项目名称长度不能超过200")
     private String projectName;
 

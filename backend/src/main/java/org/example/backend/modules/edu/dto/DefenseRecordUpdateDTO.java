@@ -15,9 +15,6 @@ public class DefenseRecordUpdateDTO {
     @NotNull(message = "答辩安排ID不能为空")
     private Long scheduleId;
 
-    @NotNull(message = "教师ID不能为空")
-    private Long teacherId;
-
     @DecimalMin(value = "0.0", message = "展示分不能小于0")
     private BigDecimal presentationScore;
 

@@ -11,9 +11,6 @@ public class TopicApplicationReviewDTO {
     @NotNull(message = "申请ID不能为空")
     private Long id;
 
-    @NotNull(message = "审核人ID不能为空")
-    private Long reviewerId;
-
     @NotBlank(message = "审核结果不能为空")
     @Pattern(regexp = "APPROVED|REJECTED", message = "审核结果只能是 APPROVED 或 REJECTED")
     private String status;

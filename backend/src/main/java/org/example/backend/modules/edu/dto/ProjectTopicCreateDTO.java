@@ -8,9 +8,6 @@ public class ProjectTopicCreateDTO {
     @NotNull(message = "实训批次ID不能为空")
     private Long batchId;
 
-    @NotNull(message = "教师ID不能为空")
-    private Long teacherId;
-
     @NotBlank(message = "课题名称不能为空")
     @Size(max = 200, message = "课题名称长度不能超过200")
     private String topicName;

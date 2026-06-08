@@ -18,9 +18,6 @@ public class StageSubmissionUpdateDTO {
     @NotNull(message = "项目组ID不能为空")
     private Long groupId;
 
-    @NotNull(message = "提交人ID不能为空")
-    private Long submitterId;
-
     @NotNull(message = "版本号不能为空")
     private Integer versionNo;
 

@@ -15,8 +15,6 @@ public class OperationLogCreateDTO {
     @Size(max = 50, message = "操作类型长度不能超过50")
     private String operationType;
 
-    private Long operatorId;
-
     @Size(max = 20, message = "请求方式长度不能超过20")
     private String requestMethod;
 
