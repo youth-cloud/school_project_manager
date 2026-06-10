@@ -23,6 +23,14 @@ public class SysUser {
 
     private String realName;
 
+    private String studentNo;
+
+    private Long classId;
+
+    private String phone;
+
+    private String email;
+
     private Integer status;
 
     private LocalDateTime createTime;

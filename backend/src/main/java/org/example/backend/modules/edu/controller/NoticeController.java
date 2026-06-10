@@ -124,6 +124,9 @@ public class NoticeController {
         if (!sysUserService.hasAnyRole(currentUser.getUserId(), "TEACHER", "ADMIN")) {
             return Result.fail(403, "当前用户没有公告修改权限");
         }
+        if (!canManageNotice(currentUser, existing)) {
+            return Result.fail(403, "当前用户无权修改该公告");
+        }
 
         Notice notice = new Notice();
         notice.setId(dto.getId());
@@ -142,6 +145,17 @@ public class NoticeController {
         Notice existing = noticeService.getById(id);
         if (existing == null) {
             return Result.fail(404, "公告不存在");
+        }
+
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
+        if (!sysUserService.hasAnyRole(currentUser.getUserId(), "TEACHER", "ADMIN")) {
+            return Result.fail(403, "当前用户没有公告删除权限");
+        }
+        if (!canManageNotice(currentUser, existing)) {
+            return Result.fail(403, "当前用户无权删除该公告");
         }
         return Result.success(noticeService.removeById(id));
     }
@@ -180,6 +194,16 @@ public class NoticeController {
             return "STUDENT".equalsIgnoreCase(notice.getTargetRole());
         }
         return false;
+    }
+
+    private boolean canManageNotice(LoginUserPrincipal currentUser, Notice notice) {
+        if (hasRole(currentUser, "ADMIN")) {
+            return true;
+        }
+        return hasRole(currentUser, "TEACHER")
+                && currentUser != null
+                && currentUser.getUserId() != null
+                && currentUser.getUserId().equals(notice.getPublisherId());
     }
 
     private boolean hasRole(LoginUserPrincipal currentUser, String roleCode) {

@@ -298,7 +298,7 @@ public class ScoreRecordController {
         }
 
         if (groupId == null) {
-            return null;
+            return Result.fail(400, "成绩记录必须绑定项目组");
         }
 
         ProjectGroup projectGroup = projectGroupService.getById(groupId);

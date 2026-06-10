@@ -12,6 +12,7 @@ public class ScoreRecordCreateDTO {
     @NotNull(message = "实训批次ID不能为空")
     private Long batchId;
 
+    @NotNull(message = "项目组ID不能为空")
     private Long groupId;
 
     @NotNull(message = "学生ID不能为空")

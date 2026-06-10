@@ -24,7 +24,7 @@ public class ProjectTopicUpdateDTO {
 
     @NotNull(message = "难度等级不能为空")
     @Min(value = 1, message = "难度等级不能小于1")
-    @Max(value = 3, message = "难度等级不能大于3")
+    @Max(value = 4, message = "难度等级不能大于4")
     private Integer difficultyLevel;
 
     @Size(max = 500, message = "技术要求长度不能超过500")

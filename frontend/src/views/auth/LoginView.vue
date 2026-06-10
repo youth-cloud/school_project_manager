@@ -46,7 +46,6 @@ const handleLogin = async () => {
       <div class="login-title">
         <span class="title-badge">School Project Manager</span>
         <h1>学校实训管理平台</h1>
-        <p>蓝白风格管理端 · 第 2 步：接入真实登录</p>
       </div>
 
       <el-form label-position="top" class="login-form">
@@ -70,8 +69,6 @@ const handleLogin = async () => {
           登录系统
         </el-button>
       </el-form>
-
-      <el-alert title="下一步我们会继续接入当前登录用户信息与退出登录。" type="info" :closable="false" show-icon />
     </div>
   </div>
 </template>
@@ -87,12 +84,14 @@ const handleLogin = async () => {
   padding: 24px;
   background: linear-gradient(135deg, #eef6ff 0%, #f7fbff 45%, #ffffff 100%);
 }
+
 .bg-circle {
   position: absolute;
   border-radius: 50%;
   filter: blur(8px);
   opacity: 0.55;
 }
+
 .bg-circle-one {
   width: 320px;
   height: 320px;
@@ -100,6 +99,7 @@ const handleLogin = async () => {
   left: -80px;
   background: radial-gradient(circle, #6bb7ff 0%, rgb(107 183 255 / 10%) 70%);
 }
+
 .bg-circle-two {
   width: 260px;
   height: 260px;
@@ -107,6 +107,7 @@ const handleLogin = async () => {
   bottom: -40px;
   background: radial-gradient(circle, #9cc9ff 0%, rgb(156 201 255 / 10%) 70%);
 }
+
 .login-card {
   position: relative;
   z-index: 1;
@@ -118,10 +119,12 @@ const handleLogin = async () => {
   box-shadow: 0 24px 60px rgb(33 89 166 / 15%);
   backdrop-filter: blur(18px);
 }
+
 .login-title {
   text-align: center;
   margin-bottom: 24px;
 }
+
 .title-badge {
   display: inline-block;
   margin-bottom: 14px;
@@ -132,20 +135,18 @@ const handleLogin = async () => {
   font-size: 12px;
   font-weight: 600;
 }
+
 .login-title h1 {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 28px;
   font-weight: 700;
   color: #1f2d3d;
 }
-.login-title p {
-  margin: 0;
-  color: #7b8ba1;
-  font-size: 14px;
-}
+
 .login-form {
   margin-bottom: 20px;
 }
+
 .login-button {
   width: 100%;
   margin-top: 10px;

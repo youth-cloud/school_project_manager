@@ -188,31 +188,7 @@ public class SubmissionFileController {
 
     @PostMapping
     public Result<SubmissionFile> create(@Valid @RequestBody SubmissionFileCreateDTO dto) {
-        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
-        if (currentUser == null) {
-            return Result.fail(401, "当前未登录");
-        }
-
-        StageSubmission stageSubmission = stageSubmissionService.getById(dto.getSubmissionId());
-        if (stageSubmission == null) {
-            return Result.fail(404, "阶段提交不存在");
-        }
-        if (!canAccessSubmission(currentUser, stageSubmission)) {
-            return Result.fail(403, "当前用户无权为该阶段提交上传文件");
-        }
-
-        SubmissionFile submissionFile = new SubmissionFile();
-        submissionFile.setSubmissionId(dto.getSubmissionId());
-        submissionFile.setFileName(dto.getFileName());
-        submissionFile.setOriginalName(dto.getOriginalName());
-        submissionFile.setFileType(dto.getFileType());
-        submissionFile.setFileSize(dto.getFileSize());
-        submissionFile.setFilePath(dto.getFilePath());
-        submissionFile.setFileUrl(dto.getFileUrl());
-        submissionFile.setBizType(dto.getBizType());
-        submissionFile.setUploadUserId(currentUser.getUserId());
-        submissionFileService.save(submissionFile);
-        return Result.success(submissionFile);
+        return Result.fail(400, "当前版本不支持手工创建文件记录，请使用上传接口");
     }
 
     @GetMapping("/{id}")
@@ -248,40 +224,7 @@ public class SubmissionFileController {
 
     @PutMapping
     public Result<SubmissionFile> update(@Valid @RequestBody SubmissionFileUpdateDTO dto) {
-        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
-        if (currentUser == null) {
-            return Result.fail(401, "当前未登录");
-        }
-
-        SubmissionFile existing = submissionFileService.getById(dto.getId());
-        if (existing == null) {
-            return Result.fail(404, "提交文件不存在");
-        }
-        if (!canManageSubmissionFile(currentUser, existing)) {
-            return Result.fail(403, "当前用户无权修改该提交文件");
-        }
-
-        StageSubmission stageSubmission = stageSubmissionService.getById(dto.getSubmissionId());
-        if (stageSubmission == null) {
-            return Result.fail(404, "阶段提交不存在");
-        }
-        if (!canAccessSubmission(currentUser, stageSubmission)) {
-            return Result.fail(403, "当前用户无权关联到该阶段提交");
-        }
-
-        SubmissionFile submissionFile = new SubmissionFile();
-        submissionFile.setId(dto.getId());
-        submissionFile.setSubmissionId(dto.getSubmissionId());
-        submissionFile.setFileName(dto.getFileName());
-        submissionFile.setOriginalName(dto.getOriginalName());
-        submissionFile.setFileType(dto.getFileType());
-        submissionFile.setFileSize(dto.getFileSize());
-        submissionFile.setFilePath(dto.getFilePath());
-        submissionFile.setFileUrl(dto.getFileUrl());
-        submissionFile.setBizType(dto.getBizType());
-        submissionFile.setUploadUserId(existing.getUploadUserId());
-        submissionFileService.updateById(submissionFile);
-        return Result.success(submissionFileService.getById(dto.getId()));
+        return Result.fail(400, "当前版本不支持手工修改文件记录，请通过重新上传或删除后重传处理");
     }
 
     @DeleteMapping("/{id}")
@@ -421,6 +364,9 @@ public class SubmissionFileController {
             return ResponseEntity.status(403).body(Result.fail(403, "当前用户无权访问该提交文件"));
         }
         Path path = resolvePhysicalPath(submissionFile);
+        if (path == null) {
+            return ResponseEntity.status(400).body(Result.fail(400, "文件路径非法"));
+        }
         if (!Files.exists(path) || Files.isDirectory(path)) {
             return ResponseEntity.status(404).body(Result.fail(404, "物理文件不存在"));
         }
@@ -440,8 +386,16 @@ public class SubmissionFileController {
     }
 
     private Path resolvePhysicalPath(SubmissionFile submissionFile) {
-        Path path = Paths.get(submissionFile.getFilePath());
-        return path.isAbsolute() ? path : Paths.get(uploadBaseDir, submissionFile.getFilePath());
+        if (submissionFile == null || !StringUtils.hasText(submissionFile.getFilePath())) {
+            return null;
+        }
+        Path basePath = Paths.get(uploadBaseDir).toAbsolutePath().normalize();
+        Path relativePath = Paths.get(submissionFile.getFilePath()).normalize();
+        if (relativePath.isAbsolute()) {
+            return null;
+        }
+        Path resolvedPath = basePath.resolve(relativePath).normalize();
+        return resolvedPath.startsWith(basePath) ? resolvedPath : null;
     }
 
     private MediaType resolveMediaType(Path path) {
@@ -458,7 +412,10 @@ public class SubmissionFileController {
             return;
         }
         try {
-            Files.deleteIfExists(resolvePhysicalPath(submissionFile));
+            Path path = resolvePhysicalPath(submissionFile);
+            if (path != null) {
+                Files.deleteIfExists(path);
+            }
         } catch (IOException ignored) {
         }
     }

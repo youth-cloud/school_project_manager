@@ -13,16 +13,20 @@ import org.example.backend.modules.edu.dto.StageTaskUpdateDTO;
 import org.example.backend.modules.edu.entity.ProjectGroup;
 import org.example.backend.modules.edu.entity.ProjectGroupMember;
 import org.example.backend.modules.edu.entity.StageTask;
+import org.example.backend.modules.edu.entity.TopicApplication;
 import org.example.backend.modules.edu.entity.TrainingBatch;
 import org.example.backend.modules.edu.service.ProjectGroupMemberService;
 import org.example.backend.modules.edu.service.ProjectGroupService;
 import org.example.backend.modules.edu.service.StageTaskService;
+import org.example.backend.modules.edu.service.TopicApplicationService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
 import org.example.backend.modules.system.service.SysUserService;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -32,17 +36,20 @@ public class StageTaskController {
     private final TrainingBatchService trainingBatchService;
     private final ProjectGroupService projectGroupService;
     private final ProjectGroupMemberService projectGroupMemberService;
+    private final TopicApplicationService topicApplicationService;
     private final SysUserService sysUserService;
 
     public StageTaskController(StageTaskService stageTaskService,
                                TrainingBatchService trainingBatchService,
                                ProjectGroupService projectGroupService,
                                ProjectGroupMemberService projectGroupMemberService,
+                               TopicApplicationService topicApplicationService,
                                SysUserService sysUserService) {
         this.stageTaskService = stageTaskService;
         this.trainingBatchService = trainingBatchService;
         this.projectGroupService = projectGroupService;
         this.projectGroupMemberService = projectGroupMemberService;
+        this.topicApplicationService = topicApplicationService;
         this.sysUserService = sysUserService;
     }
 
@@ -229,16 +236,7 @@ public class StageTaskController {
             wrapper.eq(StageTask::getTeacherId, currentUser.getUserId());
             return;
         }
-        List<Long> groupIds = projectGroupMemberService.list(Wrappers.<ProjectGroupMember>lambdaQuery()
-                        .eq(ProjectGroupMember::getUserId, currentUser.getUserId()))
-                .stream().map(ProjectGroupMember::getGroupId).collect(Collectors.toList());
-        if (groupIds.isEmpty()) {
-            wrapper.eq(StageTask::getId, -1L);
-            return;
-        }
-        List<Long> batchIds = projectGroupService.list(Wrappers.<ProjectGroup>lambdaQuery()
-                        .in(ProjectGroup::getId, groupIds))
-                .stream().map(ProjectGroup::getBatchId).distinct().collect(Collectors.toList());
+        Set<Long> batchIds = getStudentVisibleBatchIds(currentUser.getUserId());
         if (batchIds.isEmpty()) {
             wrapper.eq(StageTask::getId, -1L);
             return;
@@ -256,9 +254,35 @@ public class StageTaskController {
         if (hasRole(currentUser, "TEACHER")) {
             return currentUser.getUserId().equals(stageTask.getTeacherId());
         }
-        return projectGroupMemberService.count(Wrappers.<ProjectGroupMember>lambdaQuery()
-                .eq(ProjectGroupMember::getUserId, currentUser.getUserId())
-                .exists("select 1 from project_group pg where pg.id = group_id and pg.batch_id = {0}", stageTask.getBatchId())) > 0;
+        return getStudentVisibleBatchIds(currentUser.getUserId()).contains(stageTask.getBatchId());
+    }
+
+    private Set<Long> getStudentVisibleBatchIds(Long userId) {
+        Set<Long> batchIds = new LinkedHashSet<>();
+
+        List<Long> groupIds = projectGroupMemberService.list(Wrappers.<ProjectGroupMember>lambdaQuery()
+                        .eq(ProjectGroupMember::getUserId, userId))
+                .stream()
+                .map(ProjectGroupMember::getGroupId)
+                .collect(Collectors.toList());
+        if (!groupIds.isEmpty()) {
+            batchIds.addAll(projectGroupService.list(Wrappers.<ProjectGroup>lambdaQuery()
+                            .in(ProjectGroup::getId, groupIds))
+                    .stream()
+                    .map(ProjectGroup::getBatchId)
+                    .filter(batchId -> batchId != null)
+                    .collect(Collectors.toSet()));
+        }
+
+        batchIds.addAll(topicApplicationService.list(Wrappers.<TopicApplication>lambdaQuery()
+                        .eq(TopicApplication::getStudentId, userId)
+                        .eq(TopicApplication::getStatus, "APPROVED"))
+                .stream()
+                .map(TopicApplication::getBatchId)
+                .filter(batchId -> batchId != null)
+                .collect(Collectors.toSet()));
+
+        return batchIds;
     }
 
     private boolean hasRole(LoginUserPrincipal currentUser, String roleCode) {
