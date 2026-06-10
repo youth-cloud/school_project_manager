@@ -6,14 +6,19 @@ import org.example.backend.common.result.Result;
 import org.example.backend.modules.auth.dto.AdminResetPasswordDTO;
 import org.example.backend.modules.auth.dto.ChangePasswordDTO;
 import org.example.backend.modules.auth.dto.LoginRequestDTO;
+import org.example.backend.modules.auth.dto.ProfileUpdateDTO;
 import org.example.backend.modules.auth.security.LoginUserPrincipal;
 import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.auth.vo.LoginResponseVO;
+import org.example.backend.modules.auth.vo.ProfileInfoVO;
 import org.example.backend.modules.auth.vo.LoginUserInfoVO;
+import org.example.backend.modules.edu.entity.EduClass;
+import org.example.backend.modules.edu.service.EduClassService;
 import org.example.backend.modules.system.entity.SysUser;
 import org.example.backend.modules.system.service.SysUserService;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -36,15 +41,18 @@ public class AuthController {
     private final JwtTokenUtil jwtTokenUtil;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate stringRedisTemplate;
+    private final EduClassService eduClassService;
 
     public AuthController(SysUserService sysUserService,
                           JwtTokenUtil jwtTokenUtil,
                           PasswordEncoder passwordEncoder,
-                          StringRedisTemplate stringRedisTemplate) {
+                          StringRedisTemplate stringRedisTemplate,
+                          EduClassService eduClassService) {
         this.sysUserService = sysUserService;
         this.jwtTokenUtil = jwtTokenUtil;
         this.passwordEncoder = passwordEncoder;
         this.stringRedisTemplate = stringRedisTemplate;
+        this.eduClassService = eduClassService;
     }
 
     @PostMapping("/login")
@@ -133,6 +141,48 @@ public class AuthController {
         return Result.success(buildLoginUserInfo(sysUser, principal.getRoles()));
     }
 
+    @GetMapping("/profile")
+    public Result<ProfileInfoVO> profile() {
+        LoginUserPrincipal principal = SecurityUtils.getCurrentUser();
+        if (principal == null) {
+            return Result.fail(401, "当前未登录");
+        }
+
+        SysUser sysUser = sysUserService.getById(principal.getUserId());
+        if (sysUser == null) {
+            return Result.fail(404, "当前用户不存在");
+        }
+        if (!Integer.valueOf(1).equals(sysUser.getStatus())) {
+            return Result.fail(403, "账号已被禁用");
+        }
+        return Result.success(buildProfileInfo(sysUser, principal.getRoles()));
+    }
+
+    @PutMapping("/profile")
+    public Result<ProfileInfoVO> updateProfile(@Valid @RequestBody ProfileUpdateDTO dto) {
+        LoginUserPrincipal principal = SecurityUtils.getCurrentUser();
+        if (principal == null) {
+            return Result.fail(401, "当前未登录");
+        }
+
+        SysUser sysUser = sysUserService.getById(principal.getUserId());
+        if (sysUser == null) {
+            return Result.fail(404, "当前用户不存在");
+        }
+        if (!Integer.valueOf(1).equals(sysUser.getStatus())) {
+            return Result.fail(403, "账号已被禁用");
+        }
+
+        SysUser updateUser = new SysUser();
+        updateUser.setId(sysUser.getId());
+        updateUser.setPhone(StringUtils.hasText(dto.getPhone()) ? dto.getPhone().trim() : null);
+        updateUser.setEmail(StringUtils.hasText(dto.getEmail()) ? dto.getEmail().trim() : null);
+        sysUserService.updateById(updateUser);
+
+        SysUser latestUser = sysUserService.getById(sysUser.getId());
+        return Result.success(buildProfileInfo(latestUser, principal.getRoles()));
+    }
+
     @PutMapping("/password")
     public Result<Boolean> changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
         LoginUserPrincipal principal = SecurityUtils.getCurrentUser();
@@ -201,6 +251,29 @@ public class AuthController {
         userInfo.setRealName(sysUser.getRealName());
         userInfo.setRoles(roleCodes);
         return userInfo;
+    }
+
+    private ProfileInfoVO buildProfileInfo(SysUser sysUser, List<String> roleCodes) {
+        ProfileInfoVO profileInfo = new ProfileInfoVO();
+        profileInfo.setId(sysUser.getId());
+        profileInfo.setUsername(sysUser.getUsername());
+        profileInfo.setRealName(sysUser.getRealName());
+        profileInfo.setRoles(roleCodes);
+        profileInfo.setStudentNo(sysUser.getStudentNo());
+        profileInfo.setClassId(sysUser.getClassId());
+        profileInfo.setClassName(resolveClassName(sysUser.getClassId()));
+        profileInfo.setPhone(sysUser.getPhone());
+        profileInfo.setEmail(sysUser.getEmail());
+        profileInfo.setStatus(sysUser.getStatus());
+        return profileInfo;
+    }
+
+    private String resolveClassName(Long classId) {
+        if (classId == null) {
+            return null;
+        }
+        EduClass eduClass = eduClassService.getById(classId);
+        return eduClass == null ? null : eduClass.getClassName();
     }
 
     private boolean isPasswordMatched(String rawPassword, SysUser sysUser) {

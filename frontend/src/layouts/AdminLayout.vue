@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Document, Folder, House, SwitchButton, User } from '@element-plus/icons-vue'
+import { Document, Folder, House, Key, Paperclip, SwitchButton, User } from '@element-plus/icons-vue'
 
+import { changePasswordApi } from '@/api/auth'
+import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -11,6 +13,47 @@ const userStore = useUserStore()
 
 const displayName = computed(() => userStore.userInfo?.realName || userStore.userInfo?.username || '未登录用户')
 const roleText = computed(() => (userStore.userInfo?.roles || []).join(' / ') || '暂无角色')
+const isAdmin = computed(() => (userStore.userInfo?.roles || []).includes('ADMIN'))
+const passwordDialogVisible = ref(false)
+const passwordSubmitting = ref(false)
+const passwordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const openChangePassword = () => {
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+  passwordDialogVisible.value = true
+}
+
+const handleChangePassword = async () => {
+  if (!passwordForm.oldPassword.trim()) {
+    ElMessage.warning('请先填写原密码')
+    return
+  }
+  if (!passwordForm.newPassword.trim()) {
+    ElMessage.warning('请先填写新密码')
+    return
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+
+  passwordSubmitting.value = true
+  try {
+    await changePasswordApi(passwordForm)
+    ElMessage.success('密码修改成功，请重新登录')
+    passwordDialogVisible.value = false
+    userStore.clearLoginState()
+    router.push('/login')
+  } finally {
+    passwordSubmitting.value = false
+  }
+}
 
 const handleLogout = async () => {
   await userStore.logoutAction()
@@ -33,10 +76,11 @@ onMounted(() => {
     <el-container class="layout-container">
       <el-aside width="236px" class="layout-aside">
         <div class="logo">
-          <div class="logo-mark">SP</div>
+          <div class="logo-mark">
+            <img src="/064b08b0-66ae-46d6-85c4-bf0d3b1fb191.png" alt="平台标识" class="logo-image" />
+          </div>
           <div>
             <div class="logo-title">学校实训管理平台</div>
-            <div class="logo-subtitle">Blue & White Admin</div>
           </div>
         </div>
 
@@ -45,17 +89,85 @@ onMounted(() => {
             <el-icon><House /></el-icon>
             <span>首页</span>
           </el-menu-item>
-          <el-menu-item index="/login">
+          <el-menu-item index="/profile">
             <el-icon><User /></el-icon>
-            <span>登录页</span>
+            <span>个人信息</span>
           </el-menu-item>
-          <el-menu-item index="/">
+          <el-menu-item index="/notices">
             <el-icon><Document /></el-icon>
             <span>公告管理</span>
           </el-menu-item>
-          <el-menu-item index="/">
+          <el-menu-item index="/stage-tasks">
             <el-icon><Folder /></el-icon>
-            <span>项目管理</span>
+            <span>阶段任务</span>
+          </el-menu-item>
+          <el-menu-item index="/stage-submissions">
+            <el-icon><Document /></el-icon>
+            <span>阶段提交</span>
+          </el-menu-item>
+          <el-menu-item index="/submission-files">
+            <el-icon><Paperclip /></el-icon>
+            <span>提交附件</span>
+          </el-menu-item>
+          <el-menu-item index="/review-records">
+            <el-icon><Document /></el-icon>
+            <span>审核记录</span>
+          </el-menu-item>
+          <el-menu-item index="/score-records">
+            <el-icon><Document /></el-icon>
+            <span>成绩记录</span>
+          </el-menu-item>
+          <el-menu-item index="/weekly-reports">
+            <el-icon><Document /></el-icon>
+            <span>周报管理</span>
+          </el-menu-item>
+          <el-menu-item index="/defense-schedules">
+            <el-icon><Document /></el-icon>
+            <span>答辩安排</span>
+          </el-menu-item>
+          <el-menu-item index="/defense-records">
+            <el-icon><Document /></el-icon>
+            <span>答辩记录</span>
+          </el-menu-item>
+          <el-menu-item index="/topic-applications">
+            <el-icon><Document /></el-icon>
+            <span>选题申请</span>
+          </el-menu-item>
+          <el-menu-item index="/project-topics">
+            <el-icon><Document /></el-icon>
+            <span>课题管理</span>
+          </el-menu-item>
+          <el-menu-item index="/project-groups">
+            <el-icon><Document /></el-icon>
+            <span>项目组管理</span>
+          </el-menu-item>
+          <el-menu-item index="/project-group-applications">
+            <el-icon><Document /></el-icon>
+            <span>建组申请</span>
+          </el-menu-item>
+          <el-menu-item index="/project-group-members">
+            <el-icon><Document /></el-icon>
+            <span>项目组成员</span>
+          </el-menu-item>
+          <el-menu-item index="/training-batches">
+            <el-icon><Document /></el-icon>
+            <span>实训批次</span>
+          </el-menu-item>
+          <el-menu-item index="/edu-classes">
+            <el-icon><Document /></el-icon>
+            <span>班级管理</span>
+          </el-menu-item>
+          <el-menu-item index="/edu-courses">
+            <el-icon><Document /></el-icon>
+            <span>课程管理</span>
+          </el-menu-item>
+          <el-menu-item index="/operation-logs">
+            <el-icon><Document /></el-icon>
+            <span>操作日志</span>
+          </el-menu-item>
+          <el-menu-item v-if="isAdmin" index="/sys-users">
+            <el-icon><User /></el-icon>
+            <span>用户管理</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
@@ -64,7 +176,6 @@ onMounted(() => {
         <el-header class="layout-header">
           <div class="header-left">
             <h2>后台管理端</h2>
-            <span>蓝白风格 · 登录态接入中</span>
           </div>
 
           <div class="header-right">
@@ -72,6 +183,10 @@ onMounted(() => {
               <div class="user-name">{{ displayName }}</div>
               <div class="user-role">{{ roleText }}</div>
             </div>
+            <el-button plain @click="openChangePassword">
+              <el-icon><Key /></el-icon>
+              修改密码
+            </el-button>
             <el-button type="primary" plain @click="handleLogout">
               <el-icon><SwitchButton /></el-icon>
               退出登录
@@ -84,6 +199,13 @@ onMounted(() => {
         </el-main>
       </el-container>
     </el-container>
+
+    <ChangePasswordDialog
+      v-model="passwordDialogVisible"
+      :form-data="passwordForm"
+      :submitting="passwordSubmitting"
+      @submit="handleChangePassword"
+    />
   </div>
 </template>
 
@@ -109,23 +231,24 @@ onMounted(() => {
   border-bottom: 1px solid rgb(255 255 255 / 12%);
 }
 .logo-mark {
-  width: 38px;
-  height: 38px;
+  width: 46px;
+  height: 46px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 12px;
   background: rgb(255 255 255 / 16%);
-  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .logo-title {
   font-size: 16px;
   font-weight: 700;
-}
-.logo-subtitle {
-  margin-top: 4px;
-  font-size: 12px;
-  color: rgb(219 234 254 / 90%);
 }
 .menu {
   border-right: none;
@@ -150,10 +273,6 @@ onMounted(() => {
   margin: 0;
   font-size: 22px;
   color: #1f2d3d;
-}
-.header-left span {
-  color: #6b7a90;
-  font-size: 14px;
 }
 .header-right {
   display: flex;

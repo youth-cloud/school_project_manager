@@ -224,7 +224,12 @@ public class WeeklyReportController {
             return;
         }
         if (hasRole(currentUser, "STUDENT")) {
-            wrapper.eq(WeeklyReport::getStudentId, currentUser.getUserId());
+            List<Long> groupIds = listCurrentStudentGroupIds(currentUser.getUserId());
+            if (groupIds.isEmpty()) {
+                wrapper.eq(WeeklyReport::getId, -1L);
+                return;
+            }
+            wrapper.in(WeeklyReport::getGroupId, groupIds);
             return;
         }
         if (hasRole(currentUser, "TEACHER")) {
@@ -247,7 +252,7 @@ public class WeeklyReportController {
             return true;
         }
         if (hasRole(currentUser, "STUDENT")) {
-            return currentUser.getUserId().equals(weeklyReport.getStudentId());
+            return isGroupMember(weeklyReport.getGroupId(), currentUser.getUserId());
         }
         if (hasRole(currentUser, "TEACHER")) {
             ProjectGroup projectGroup = projectGroupService.getById(weeklyReport.getGroupId());
@@ -269,5 +274,12 @@ public class WeeklyReportController {
                         .eq(ProjectGroupMember::getGroupId, groupId)
                         .eq(ProjectGroupMember::getUserId, userId)
         ) > 0;
+    }
+
+    private List<Long> listCurrentStudentGroupIds(Long userId) {
+        return projectGroupMemberService.list(
+                Wrappers.<ProjectGroupMember>lambdaQuery()
+                        .eq(ProjectGroupMember::getUserId, userId)
+        ).stream().map(ProjectGroupMember::getGroupId).collect(Collectors.toList());
     }
 }

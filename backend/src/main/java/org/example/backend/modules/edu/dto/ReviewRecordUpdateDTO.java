@@ -3,6 +3,7 @@ package org.example.backend.modules.edu.dto;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -17,6 +18,7 @@ public class ReviewRecordUpdateDTO {
     private Long submissionId;
 
     @NotBlank(message = "审核结果不能为空")
+    @Pattern(regexp = "APPROVED|REJECTED|NEED_FIX", message = "审核结果只能是 APPROVED、REJECTED 或 NEED_FIX")
     @Size(max = 30, message = "审核结果长度不能超过30")
     private String reviewResult;
 

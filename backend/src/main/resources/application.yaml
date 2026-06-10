@@ -1,41 +1,32 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+
 spring:
   application:
     name: backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/schoolprojectmanager?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      database: 0
-      timeout: 5s
   servlet:
     multipart:
-      max-file-size: 20MB
-      max-request-size: 50MB
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:20MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:50MB}
 
 app:
   upload:
-    base-dir: F:/school_project_manager/backend/uploads
-    access-url-prefix: /uploads/
-    max-file-size: 10485760
-    allowed-extensions: pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,txt,md,png,jpg,jpeg,webp
+    access-url-prefix: ${APP_UPLOAD_ACCESS_URL_PREFIX:/uploads/}
+    max-file-size: ${APP_UPLOAD_MAX_FILE_SIZE:10485760}
+    allowed-extensions: ${APP_UPLOAD_ALLOWED_EXTENSIONS:pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,7z,txt,md,png,jpg,jpeg,webp}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: org.example.backend.**.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: assign_id
-
 
 springdoc:
   api-docs:
@@ -45,11 +36,6 @@ springdoc:
     operations-sorter: alpha
     tags-sorter: alpha
 
-
-logging:
-  level:
-    org.example.backend: debug
-
 jwt:
-  secret: change-this-to-a-very-long-random-secret-key
-  expiration: 86400000
+  secret: ${JWT_SECRET:change-this-to-a-very-long-random-secret-key}
+  expiration: ${JWT_EXPIRATION:86400000}

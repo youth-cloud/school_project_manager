@@ -97,8 +97,8 @@ public class ProjectGroupController {
         if (currentUser == null) {
             return Result.fail(401, "当前未登录");
         }
-        if (!sysUserService.hasRole(currentUser.getUserId(), "TEACHER")) {
-            return Result.fail(403, "当前用户不是教师角色，不能创建项目组");
+        if (!sysUserService.hasRole(currentUser.getUserId(), "ADMIN")) {
+            return Result.fail(403, "当前版本正式项目组默认由建组申请审核通过后自动生成，仅管理员可手工创建");
         }
 
         TrainingBatch trainingBatch = trainingBatchService.getById(dto.getBatchId());
@@ -112,9 +112,6 @@ public class ProjectGroupController {
         }
         if (!dto.getBatchId().equals(projectTopic.getBatchId())) {
             return Result.fail(400, "课题不属于当前实训批次");
-        }
-        if (!currentUser.getUserId().equals(projectTopic.getTeacherId())) {
-            return Result.fail(403, "当前教师不是该课题的发布教师，不能创建项目组");
         }
         if (sysUserService.getById(dto.getLeaderId()) == null) {
             return Result.fail(404, "组长不存在");
@@ -134,7 +131,7 @@ public class ProjectGroupController {
         projectGroup.setTopicId(dto.getTopicId());
         projectGroup.setGroupName(dto.getGroupName());
         projectGroup.setLeaderId(dto.getLeaderId());
-        projectGroup.setTeacherId(currentUser.getUserId());
+        projectGroup.setTeacherId(projectTopic.getTeacherId());
         projectGroup.setProjectName(dto.getProjectName());
         projectGroup.setProjectDescription(dto.getProjectDescription());
         projectGroup.setRepoUrl(dto.getRepoUrl());
@@ -190,6 +187,9 @@ public class ProjectGroupController {
         if (!currentUser.getUserId().equals(projectTopic.getTeacherId())) {
             return Result.fail(403, "当前教师不是该课题的发布教师，不能修改项目组");
         }
+        if (!existing.getLeaderId().equals(dto.getLeaderId())) {
+            return Result.fail(400, "正式项目组组长默认来自已通过的建组申请，当前版本不支持在结果层直接变更组长");
+        }
         if (sysUserService.getById(dto.getLeaderId()) == null) {
             return Result.fail(404, "组长不存在");
         }
@@ -243,9 +243,14 @@ public class ProjectGroupController {
             wrapper.eq(ProjectGroup::getTeacherId, currentUser.getUserId());
             return;
         }
-        wrapper.in(ProjectGroup::getId, projectGroupMemberService.list(
+        List<Long> groupIds = projectGroupMemberService.list(
                 Wrappers.<ProjectGroupMember>lambdaQuery().eq(ProjectGroupMember::getUserId, currentUser.getUserId())
-        ).stream().map(ProjectGroupMember::getGroupId).toList());
+        ).stream().map(ProjectGroupMember::getGroupId).toList();
+        if (groupIds.isEmpty()) {
+            wrapper.eq(ProjectGroup::getId, -1L);
+            return;
+        }
+        wrapper.in(ProjectGroup::getId, groupIds);
     }
 
     private boolean canViewProjectGroup(LoginUserPrincipal currentUser, ProjectGroup projectGroup) {
