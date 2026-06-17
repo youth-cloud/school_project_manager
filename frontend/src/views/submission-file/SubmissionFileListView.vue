@@ -240,19 +240,23 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div>
-    <el-card shadow="never">
-      <template #header>
-        <div style="display: flex; justify-content: space-between; gap: 12px">
-          <div style="font-size: 18px; font-weight: 700">提交附件管理</div>
-          <div>
-            <el-tag type="info">共 {{ total }} 条</el-tag>
-            <el-tag type="primary" style="margin-left: 8px">{{ roleHint }}</el-tag>
-          </div>
+  <div class="submission-file-page">
+    <el-card class="hero-card" shadow="never">
+      <div class="hero-content">
+        <div class="hero-main">
+          <div class="hero-badge">Submission File Management</div>
+          <h1>提交附件管理</h1>
         </div>
-      </template>
+        <div class="hero-side">
+          <div class="hero-side-label">当前视角</div>
+          <div class="hero-side-value">{{ roleHint }}</div>
+          <div class="hero-side-meta">共 {{ total }} 条记录</div>
+        </div>
+      </div>
+    </el-card>
 
-      <el-form :inline="true">
+    <el-card class="filter-card" shadow="never">
+      <el-form :inline="true" class="filter-form">
         <el-form-item label="所属提交">
           <el-select v-model="q.submissionId" filterable clearable style="width: 280px">
             <el-option v-for="item in subs" :key="item.id" :label="subLabel(item.id)" :value="item.id" />
@@ -270,8 +274,20 @@ onMounted(async () => {
           <el-button v-if="canUpload" type="success" :icon="Plus" @click="openCreate">上传附件</el-button>
         </el-form-item>
       </el-form>
+    </el-card>
 
-      <el-table :data="rows" v-loading="loading" stripe>
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="table-header">
+          <div class="table-title">附件列表</div>
+          <div class="header-tags">
+            <el-tag type="info">共 {{ total }} 条</el-tag>
+            <el-tag type="primary">{{ roleHint }}</el-tag>
+          </div>
+        </div>
+      </template>
+
+      <el-table :data="rows" v-loading="loading" stripe class="submission-file-table">
         <el-table-column type="index" label="#" width="60" />
         <el-table-column label="原始文件名" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
@@ -304,7 +320,7 @@ onMounted(async () => {
         </el-table-column>
       </el-table>
 
-      <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <div class="pagination-wrapper">
         <el-pagination
           background
           layout="total, sizes, prev, pager, next, jumper"
@@ -327,7 +343,7 @@ onMounted(async () => {
     />
 
     <el-dialog v-model="detail" title="附件详情" width="720px">
-      <div v-if="detailData" v-loading="detailLoading">
+      <div v-if="detailData" v-loading="detailLoading" class="detail-panel">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="原始文件名" :span="2">{{ detailData.originalName }}</el-descriptions-item>
           <el-descriptions-item label="所属提交">{{ subLabel(detailData.submissionId) }}</el-descriptions-item>
@@ -338,7 +354,7 @@ onMounted(async () => {
           <el-descriptions-item label="上传时间">{{ time(detailData.createTime) }}</el-descriptions-item>
           <el-descriptions-item label="文件路径" :span="2">{{ detailData.filePath }}</el-descriptions-item>
         </el-descriptions>
-        <div style="margin-top: 16px">
+        <div class="detail-actions">
           <el-button type="primary" @click="preview(detailData)">预览</el-button>
           <el-button type="success" @click="download(detailData)">下载</el-button>
         </div>
@@ -346,3 +362,139 @@ onMounted(async () => {
     </el-dialog>
   </div>
 </template>
+
+<style scoped lang="scss">
+.submission-file-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.hero-card,
+.filter-card,
+.table-card {
+  border-radius: 24px;
+  border: 1px solid rgba(120, 148, 196, 0.14);
+  box-shadow: 0 18px 38px rgb(57 118 201 / 8%);
+}
+
+.hero-card {
+  background:
+    radial-gradient(circle at top right, rgba(116, 166, 255, 0.18), transparent 24%),
+    linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #ffffff 100%);
+}
+
+.hero-content {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.hero-main {
+  max-width: 760px;
+}
+
+.hero-badge {
+  display: inline-block;
+  margin-bottom: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #dcebff;
+  color: #2f6fdb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hero-content h1 {
+  margin: 0;
+  color: #1f2d3d;
+  font-size: 30px;
+}
+
+.hero-side {
+  min-width: 240px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(120, 148, 196, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.hero-side-label {
+  color: #7b8ba1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-side-value {
+  margin-top: 10px;
+  color: #1f2d3d;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.hero-side-meta {
+  margin-top: 10px;
+  color: #7b8ba1;
+  line-height: 1.7;
+}
+
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 0;
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.table-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2d3d;
+}
+
+.header-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.submission-file-table {
+  margin-top: 4px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 10px;
+}
+
+@media (max-width: 1024px) {
+  .hero-content {
+    flex-direction: column;
+  }
+
+  .hero-side {
+    min-width: 0;
+  }
+}
+</style>

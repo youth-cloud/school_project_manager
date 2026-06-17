@@ -12,11 +12,13 @@ import org.example.backend.modules.edu.dto.StageTaskPageQueryDTO;
 import org.example.backend.modules.edu.dto.StageTaskUpdateDTO;
 import org.example.backend.modules.edu.entity.ProjectGroup;
 import org.example.backend.modules.edu.entity.ProjectGroupMember;
+import org.example.backend.modules.edu.entity.StageSubmission;
 import org.example.backend.modules.edu.entity.StageTask;
 import org.example.backend.modules.edu.entity.TopicApplication;
 import org.example.backend.modules.edu.entity.TrainingBatch;
 import org.example.backend.modules.edu.service.ProjectGroupMemberService;
 import org.example.backend.modules.edu.service.ProjectGroupService;
+import org.example.backend.modules.edu.service.StageSubmissionService;
 import org.example.backend.modules.edu.service.StageTaskService;
 import org.example.backend.modules.edu.service.TopicApplicationService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
@@ -36,6 +38,7 @@ public class StageTaskController {
     private final TrainingBatchService trainingBatchService;
     private final ProjectGroupService projectGroupService;
     private final ProjectGroupMemberService projectGroupMemberService;
+    private final StageSubmissionService stageSubmissionService;
     private final TopicApplicationService topicApplicationService;
     private final SysUserService sysUserService;
 
@@ -43,12 +46,14 @@ public class StageTaskController {
                                TrainingBatchService trainingBatchService,
                                ProjectGroupService projectGroupService,
                                ProjectGroupMemberService projectGroupMemberService,
+                               StageSubmissionService stageSubmissionService,
                                TopicApplicationService topicApplicationService,
                                SysUserService sysUserService) {
         this.stageTaskService = stageTaskService;
         this.trainingBatchService = trainingBatchService;
         this.projectGroupService = projectGroupService;
         this.projectGroupMemberService = projectGroupMemberService;
+        this.stageSubmissionService = stageSubmissionService;
         this.topicApplicationService = topicApplicationService;
         this.sysUserService = sysUserService;
     }
@@ -167,6 +172,12 @@ public class StageTaskController {
         if (existing == null) {
             return Result.fail(404, "阶段任务不存在");
         }
+        if (!currentUser.getUserId().equals(existing.getTeacherId())) {
+            return Result.fail(403, "当前教师不是该阶段任务发布教师，不能修改阶段任务");
+        }
+        if (!existing.getBatchId().equals(dto.getBatchId())) {
+            return Result.fail(400, "阶段任务创建后不允许变更所属实训批次");
+        }
 
         TrainingBatch trainingBatch = trainingBatchService.getById(dto.getBatchId());
         if (trainingBatch == null) {
@@ -211,6 +222,12 @@ public class StageTaskController {
         StageTask existing = stageTaskService.getById(id);
         if (existing == null) {
             return Result.fail(404, "阶段任务不存在");
+        }
+        if (stageSubmissionService.count(
+                Wrappers.<StageSubmission>lambdaQuery()
+                        .eq(StageSubmission::getTaskId, id)
+        ) > 0) {
+            return Result.fail(400, "该阶段任务已有关联阶段提交，不能删除");
         }
         if (hasRole(currentUser, "ADMIN")) {
             return Result.success(stageTaskService.removeById(id));

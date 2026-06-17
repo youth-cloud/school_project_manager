@@ -7,8 +7,10 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const proxyTarget = env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://localhost:8080'
+  const appBase = env.VITE_APP_BASE || '/'
 
   return {
+    base: appBase,
     plugins: [vue()],
     resolve: {
       alias: {

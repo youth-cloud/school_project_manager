@@ -107,7 +107,7 @@ const textPreview = (value: string | null, limit = 32) => {
 const getBatchLabel = (id: string) => {
   const item = batchOptions.value.find((option) => option.id === id)
   if (!item) return id
-  return item.termName ? `${item.batchName} · ${item.termName}` : item.batchName
+  return item.termName ? `${item.batchName} - ${item.termName}` : item.batchName
 }
 
 const getTeacherLabel = (id: string) => {
@@ -280,9 +280,14 @@ onMounted(() => {
   <div class="project-topic-page">
     <el-card class="hero-card" shadow="never">
       <div class="hero-content">
-        <div>
+        <div class="hero-main">
           <div class="hero-badge">Project Topic Management</div>
           <h1>课题管理</h1>
+        </div>
+        <div class="hero-side">
+          <div class="hero-side-label">当前视角</div>
+          <div class="hero-side-value">{{ roleHint }}</div>
+          <div class="hero-side-meta">当前列表共 {{ total }} 条课题记录</div>
         </div>
       </div>
     </el-card>
@@ -448,8 +453,8 @@ onMounted(() => {
           background
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          :current-page="pagination.current"
-          :page-size="pagination.size"
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
           :page-sizes="[10, 20, 30, 50]"
           @current-change="handleCurrentChange"
           @size-change="handleSizeChange"
@@ -472,7 +477,7 @@ onMounted(() => {
         <div class="detail-header">
           <div>
             <h2>{{ detailData.topicName }}</h2>
-            <p>{{ getBatchLabel(detailData.batchId) }} · 教师：{{ getTeacherLabel(detailData.teacherId) }}</p>
+            <p>{{ getBatchLabel(detailData.batchId) }} - 教师：{{ getTeacherLabel(detailData.teacherId) }}</p>
           </div>
           <div class="detail-tags">
             <el-tag :type="getDifficultyTagType(detailData.difficultyLevel)" effect="light">
@@ -525,26 +530,32 @@ onMounted(() => {
 .project-topic-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
 }
 
 .hero-card,
 .filter-card,
 .table-card {
-  border-radius: 20px;
-  border: none;
-  box-shadow: 0 14px 32px rgb(57 118 201 / 8%);
+  border-radius: 24px;
+  border: 1px solid rgba(120, 148, 196, 0.14);
+  box-shadow: 0 18px 38px rgb(57 118 201 / 8%);
 }
 
 .hero-card {
-  background: linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #ffffff 100%);
+  background:
+    radial-gradient(circle at top right, rgba(116, 166, 255, 0.18), transparent 24%),
+    linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #ffffff 100%);
 }
 
 .hero-content {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 20px;
+}
+
+.hero-main {
+  max-width: 760px;
 }
 
 .hero-badge {
@@ -561,13 +572,60 @@ onMounted(() => {
 .hero-content h1 {
   margin: 0 0 10px;
   color: #1f2d3d;
-  font-size: 28px;
+  font-size: 30px;
 }
 
 .hero-content p {
   margin: 0;
+  max-width: 640px;
   color: #6b7a90;
   line-height: 1.8;
+}
+
+.hero-side {
+  min-width: 240px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(120, 148, 196, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.hero-side-label {
+  color: #7b8ba1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-side-value {
+  margin-top: 10px;
+  color: #1f2d3d;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.hero-side-meta {
+  margin-top: 10px;
+  color: #7b8ba1;
+  line-height: 1.7;
+}
+
+.filter-panel-head {
+  margin-bottom: 14px;
+}
+
+.filter-title {
+  color: #1f2d3d;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.filter-subtitle {
+  margin-top: 6px;
+  color: #7b8ba1;
+  font-size: 13px;
 }
 
 .filter-form {
@@ -605,6 +663,16 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 20px;
+}
+
+@media (max-width: 1024px) {
+  .hero-content {
+    flex-direction: column;
+  }
+
+  .hero-side {
+    min-width: 0;
+  }
 }
 
 .detail-panel {

@@ -10,15 +10,26 @@ import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.edu.dto.ProjectTopicCreateDTO;
 import org.example.backend.modules.edu.dto.ProjectTopicPageQueryDTO;
 import org.example.backend.modules.edu.dto.ProjectTopicUpdateDTO;
+import org.example.backend.modules.edu.entity.ProjectGroup;
+import org.example.backend.modules.edu.entity.ProjectGroupApplication;
 import org.example.backend.modules.edu.entity.ProjectTopic;
+import org.example.backend.modules.edu.entity.TopicApplication;
 import org.example.backend.modules.edu.entity.TrainingBatch;
+import org.example.backend.modules.edu.service.ProjectGroupApplicationService;
+import org.example.backend.modules.edu.service.ProjectGroupService;
 import org.example.backend.modules.edu.service.ProjectTopicService;
+import org.example.backend.modules.edu.service.TopicApplicationService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
 import org.example.backend.modules.system.service.SysUserService;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/project-topics")
@@ -26,13 +37,22 @@ public class ProjectTopicController {
 
     private final ProjectTopicService projectTopicService;
     private final TrainingBatchService trainingBatchService;
+    private final TopicApplicationService topicApplicationService;
+    private final ProjectGroupApplicationService projectGroupApplicationService;
+    private final ProjectGroupService projectGroupService;
     private final SysUserService sysUserService;
 
     public ProjectTopicController(ProjectTopicService projectTopicService,
                                   TrainingBatchService trainingBatchService,
+                                  TopicApplicationService topicApplicationService,
+                                  ProjectGroupApplicationService projectGroupApplicationService,
+                                  ProjectGroupService projectGroupService,
                                   SysUserService sysUserService) {
         this.projectTopicService = projectTopicService;
         this.trainingBatchService = trainingBatchService;
+        this.topicApplicationService = topicApplicationService;
+        this.projectGroupApplicationService = projectGroupApplicationService;
+        this.projectGroupService = projectGroupService;
         this.sysUserService = sysUserService;
     }
 
@@ -45,7 +65,9 @@ public class ProjectTopicController {
         LambdaQueryWrapper<ProjectTopic> wrapper = Wrappers.lambdaQuery();
         applyProjectTopicViewScope(wrapper, currentUser);
         wrapper.orderByDesc(ProjectTopic::getCreateTime);
-        return Result.success(projectTopicService.list(wrapper));
+        List<ProjectTopic> topics = projectTopicService.list(wrapper);
+        refreshSelectedCounts(topics);
+        return Result.success(topics);
     }
 
     @GetMapping("/page")
@@ -75,7 +97,9 @@ public class ProjectTopicController {
 
         applyProjectTopicViewScope(wrapper, currentUser);
         wrapper.orderByDesc(ProjectTopic::getCreateTime);
-        return Result.success(projectTopicService.page(page, wrapper));
+        Page<ProjectTopic> topicPage = projectTopicService.page(page, wrapper);
+        refreshSelectedCounts(topicPage.getRecords());
+        return Result.success(topicPage);
     }
 
     @PostMapping
@@ -123,6 +147,7 @@ public class ProjectTopicController {
         if (!canViewProjectTopic(currentUser, projectTopic)) {
             return Result.fail(403, "当前用户无权查看该课题");
         }
+        refreshSelectedCounts(List.of(projectTopic));
         return Result.success(projectTopic);
     }
 
@@ -139,6 +164,12 @@ public class ProjectTopicController {
         ProjectTopic existing = projectTopicService.getById(dto.getId());
         if (existing == null) {
             return Result.fail(404, "课题不存在");
+        }
+        if (!currentUser.getUserId().equals(existing.getTeacherId())) {
+            return Result.fail(403, "当前教师不是该课题发布教师，不能修改课题");
+        }
+        if (!existing.getBatchId().equals(dto.getBatchId())) {
+            return Result.fail(400, "课题创建后不允许变更所属实训批次");
         }
 
         TrainingBatch trainingBatch = trainingBatchService.getById(dto.getBatchId());
@@ -173,6 +204,10 @@ public class ProjectTopicController {
         if (existing == null) {
             return Result.fail(404,"课题不存在");
         }
+        Result<Void> dependencyValidationResult = validateTopicDeleteDependencies(id);
+        if (dependencyValidationResult != null) {
+            return Result.fail(dependencyValidationResult.getCode(), dependencyValidationResult.getMessage());
+        }
         if (sysUserService.hasRole(currentUser.getUserId(), "ADMIN")) {
             return Result.success(projectTopicService.removeById(id));
         }
@@ -204,5 +239,84 @@ public class ProjectTopicController {
             return currentUser.getUserId().equals(projectTopic.getTeacherId());
         }
         return Integer.valueOf(1).equals(projectTopic.getStatus());
+    }
+
+    private Result<Void> validateTopicDeleteDependencies(Long topicId) {
+        if (topicApplicationService.count(
+                Wrappers.<TopicApplication>lambdaQuery()
+                        .eq(TopicApplication::getTopicId, topicId)
+        ) > 0) {
+            return Result.fail(400, "该课题已有关联选题申请，不能删除");
+        }
+
+        if (projectGroupApplicationService.count(
+                Wrappers.<ProjectGroupApplication>lambdaQuery()
+                        .eq(ProjectGroupApplication::getTopicId, topicId)
+        ) > 0) {
+            return Result.fail(400, "该课题已有关联建组申请，不能删除");
+        }
+
+        if (projectGroupService.count(
+                Wrappers.<ProjectGroup>lambdaQuery()
+                        .eq(ProjectGroup::getTopicId, topicId)
+        ) > 0) {
+            return Result.fail(400, "该课题已有关联项目组，不能删除");
+        }
+
+        return null;
+    }
+
+    private void refreshSelectedCounts(List<ProjectTopic> topics) {
+        if (topics == null || topics.isEmpty()) {
+            return;
+        }
+
+        List<Long> topicIds = topics.stream()
+                .map(ProjectTopic::getId)
+                .filter(id -> id != null)
+                .toList();
+        if (topicIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Integer> approvedCountMap = buildApprovedStudentCountMap(topicIds);
+        for (ProjectTopic topic : topics) {
+            if (topic.getId() == null) {
+                continue;
+            }
+
+            int approvedCount = approvedCountMap.getOrDefault(topic.getId(), 0);
+            Integer currentSelectedCount = topic.getSelectedCount();
+            topic.setSelectedCount(approvedCount);
+
+            if (currentSelectedCount != null && currentSelectedCount == approvedCount) {
+                continue;
+            }
+
+            ProjectTopic updateTopic = new ProjectTopic();
+            updateTopic.setId(topic.getId());
+            updateTopic.setSelectedCount(approvedCount);
+            projectTopicService.updateById(updateTopic);
+        }
+    }
+
+    private Map<Long, Integer> buildApprovedStudentCountMap(Collection<Long> topicIds) {
+        Map<Long, Set<Long>> approvedStudentsMap = new LinkedHashMap<>();
+        topicApplicationService.list(
+                Wrappers.<TopicApplication>lambdaQuery()
+                        .in(TopicApplication::getTopicId, topicIds)
+                        .eq(TopicApplication::getStatus, "APPROVED")
+        ).forEach(item -> {
+            if (item.getTopicId() == null || item.getStudentId() == null) {
+                return;
+            }
+            approvedStudentsMap
+                    .computeIfAbsent(item.getTopicId(), key -> new LinkedHashSet<>())
+                    .add(item.getStudentId());
+        });
+
+        Map<Long, Integer> countMap = new LinkedHashMap<>();
+        approvedStudentsMap.forEach((topicId, studentIds) -> countMap.put(topicId, studentIds.size()));
+        return countMap;
     }
 }

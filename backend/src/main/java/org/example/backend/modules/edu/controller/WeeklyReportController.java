@@ -166,6 +166,9 @@ public class WeeklyReportController {
         if (!currentUser.getUserId().equals(existing.getStudentId())) {
             return Result.fail(403, "当前用户无权修改该周报");
         }
+        if (!existing.getBatchId().equals(dto.getBatchId()) || !existing.getGroupId().equals(dto.getGroupId())) {
+            return Result.fail(400, "周报创建后不允许变更所属批次或项目组");
+        }
 
         TrainingBatch trainingBatch = trainingBatchService.getById(dto.getBatchId());
         if (trainingBatch == null) {

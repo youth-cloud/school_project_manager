@@ -10,10 +10,12 @@ import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.edu.dto.DefenseScheduleCreateDTO;
 import org.example.backend.modules.edu.dto.DefenseSchedulePageQueryDTO;
 import org.example.backend.modules.edu.dto.DefenseScheduleUpdateDTO;
+import org.example.backend.modules.edu.entity.DefenseRecord;
 import org.example.backend.modules.edu.entity.DefenseSchedule;
 import org.example.backend.modules.edu.entity.ProjectGroup;
 import org.example.backend.modules.edu.entity.ProjectGroupMember;
 import org.example.backend.modules.edu.entity.TrainingBatch;
+import org.example.backend.modules.edu.service.DefenseRecordService;
 import org.example.backend.modules.edu.service.DefenseScheduleService;
 import org.example.backend.modules.edu.service.ProjectGroupMemberService;
 import org.example.backend.modules.edu.service.ProjectGroupService;
@@ -29,17 +31,20 @@ import java.util.stream.Collectors;
 public class DefenseScheduleController {
 
     private final DefenseScheduleService defenseScheduleService;
+    private final DefenseRecordService defenseRecordService;
     private final TrainingBatchService trainingBatchService;
     private final ProjectGroupService projectGroupService;
     private final ProjectGroupMemberService projectGroupMemberService;
     private final SysUserService sysUserService;
 
     public DefenseScheduleController(DefenseScheduleService defenseScheduleService,
+                                     DefenseRecordService defenseRecordService,
                                      TrainingBatchService trainingBatchService,
                                      ProjectGroupService projectGroupService,
                                      ProjectGroupMemberService projectGroupMemberService,
                                      SysUserService sysUserService) {
         this.defenseScheduleService = defenseScheduleService;
+        this.defenseRecordService = defenseRecordService;
         this.trainingBatchService = trainingBatchService;
         this.projectGroupService = projectGroupService;
         this.projectGroupMemberService = projectGroupMemberService;
@@ -137,9 +142,19 @@ public class DefenseScheduleController {
 
     @PutMapping
     public Result<DefenseSchedule> update(@Valid @RequestBody DefenseScheduleUpdateDTO dto) {
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
         DefenseSchedule existing = defenseScheduleService.getById(dto.getId());
         if (existing == null) {
             return Result.fail(404, "答辩安排不存在");
+        }
+        if (!canViewDefenseSchedule(currentUser, existing)) {
+            return Result.fail(403, "当前用户无权修改该答辩安排");
+        }
+        if (!existing.getBatchId().equals(dto.getBatchId()) || !existing.getGroupId().equals(dto.getGroupId())) {
+            return Result.fail(400, "答辩安排创建后不允许变更所属批次或项目组");
         }
 
         TrainingBatch trainingBatch = trainingBatchService.getById(dto.getBatchId());
@@ -178,6 +193,12 @@ public class DefenseScheduleController {
         DefenseSchedule existing = defenseScheduleService.getById(id);
         if (existing == null) {
             return Result.fail(404, "答辩安排不存在");
+        }
+        if (defenseRecordService.count(
+                Wrappers.<DefenseRecord>lambdaQuery()
+                        .eq(DefenseRecord::getScheduleId, id)
+        ) > 0) {
+            return Result.fail(400, "该答辩安排已有关联答辩记录，不能删除");
         }
 
         TrainingBatch trainingBatch = trainingBatchService.getById(existing.getBatchId());
