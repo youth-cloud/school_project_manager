@@ -157,6 +157,11 @@ public class ScoreRecordController {
         }
 
         boolean isAdmin = sysUserService.hasRole(currentUser.getUserId(), "ADMIN");
+        Result<Void> existingRelationResult = validateScoreRecordRelation(
+                existing.getBatchId(), existing.getGroupId(), existing.getStudentId(), currentUser.getUserId(), isAdmin);
+        if (existingRelationResult != null) {
+            return Result.fail(existingRelationResult.getCode(), existingRelationResult.getMessage());
+        }
         Result<Void> relationResult = validateScoreRecordRelation(
                 dto.getBatchId(), dto.getGroupId(), dto.getStudentId(), currentUser.getUserId(), isAdmin);
         if (relationResult != null) {

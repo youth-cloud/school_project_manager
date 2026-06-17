@@ -164,6 +164,9 @@ public class ReviewRecordController {
         if (!currentUser.getUserId().equals(existing.getReviewerId())) {
             return Result.fail(403, "当前用户无权修改该审核记录");
         }
+        if (!existing.getSubmissionId().equals(dto.getSubmissionId())) {
+            return Result.fail(400, "审核记录创建后不允许变更所属阶段提交");
+        }
 
         StageSubmission stageSubmission = stageSubmissionService.getById(dto.getSubmissionId());
         if (stageSubmission == null) {

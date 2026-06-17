@@ -12,13 +12,17 @@ import org.example.backend.modules.edu.dto.StageSubmissionPageQueryDTO;
 import org.example.backend.modules.edu.dto.StageSubmissionUpdateDTO;
 import org.example.backend.modules.edu.entity.ProjectGroup;
 import org.example.backend.modules.edu.entity.ProjectGroupMember;
+import org.example.backend.modules.edu.entity.ReviewRecord;
 import org.example.backend.modules.edu.entity.StageSubmission;
 import org.example.backend.modules.edu.entity.StageTask;
+import org.example.backend.modules.edu.entity.SubmissionFile;
 import org.example.backend.modules.edu.entity.TrainingBatch;
 import org.example.backend.modules.edu.service.ProjectGroupMemberService;
 import org.example.backend.modules.edu.service.ProjectGroupService;
+import org.example.backend.modules.edu.service.ReviewRecordService;
 import org.example.backend.modules.edu.service.StageSubmissionService;
 import org.example.backend.modules.edu.service.StageTaskService;
+import org.example.backend.modules.edu.service.SubmissionFileService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
 import org.example.backend.modules.system.service.SysUserService;
 import org.springframework.util.StringUtils;
@@ -36,6 +40,8 @@ public class StageSubmissionController {
     private final TrainingBatchService trainingBatchService;
     private final ProjectGroupService projectGroupService;
     private final ProjectGroupMemberService projectGroupMemberService;
+    private final SubmissionFileService submissionFileService;
+    private final ReviewRecordService reviewRecordService;
     private final SysUserService sysUserService;
 
     public StageSubmissionController(StageSubmissionService stageSubmissionService,
@@ -43,12 +49,16 @@ public class StageSubmissionController {
                                      TrainingBatchService trainingBatchService,
                                      ProjectGroupService projectGroupService,
                                      ProjectGroupMemberService projectGroupMemberService,
+                                     SubmissionFileService submissionFileService,
+                                     ReviewRecordService reviewRecordService,
                                      SysUserService sysUserService) {
         this.stageSubmissionService = stageSubmissionService;
         this.stageTaskService = stageTaskService;
         this.trainingBatchService = trainingBatchService;
         this.projectGroupService = projectGroupService;
         this.projectGroupMemberService = projectGroupMemberService;
+        this.submissionFileService = submissionFileService;
+        this.reviewRecordService = reviewRecordService;
         this.sysUserService = sysUserService;
     }
 
@@ -188,6 +198,12 @@ public class StageSubmissionController {
         if (!canManageStageSubmission(currentUser, existing)) {
             return Result.fail(403, "当前用户无权修改该阶段提交");
         }
+        if (hasSubmissionDependencies(existing.getId())
+                && (!equalsValue(existing.getTaskId(), dto.getTaskId())
+                || !equalsValue(existing.getBatchId(), dto.getBatchId())
+                || !equalsValue(existing.getGroupId(), dto.getGroupId()))) {
+            return Result.fail(400, "该阶段提交已有关联附件或审核记录，不能再修改所属任务、批次或项目组");
+        }
 
         StageTask stageTask = stageTaskService.getById(dto.getTaskId());
         if (stageTask == null) {
@@ -244,6 +260,18 @@ public class StageSubmissionController {
         }
         if (!canManageStageSubmission(currentUser, existing)) {
             return Result.fail(403, "当前用户无权删除该阶段提交");
+        }
+        if (submissionFileService.count(
+                Wrappers.<SubmissionFile>lambdaQuery()
+                        .eq(SubmissionFile::getSubmissionId, id)
+        ) > 0) {
+            return Result.fail(400, "该阶段提交已有关联提交附件，不能删除");
+        }
+        if (reviewRecordService.count(
+                Wrappers.<ReviewRecord>lambdaQuery()
+                        .eq(ReviewRecord::getSubmissionId, id)
+        ) > 0) {
+            return Result.fail(400, "该阶段提交已有关联审核记录，不能删除");
         }
         return Result.success(stageSubmissionService.removeById(id));
     }
@@ -311,6 +339,26 @@ public class StageSubmissionController {
         }
         return hasRole(currentUser, "ADMIN")
                 || currentUser.getUserId().equals(submission.getSubmitterId());
+    }
+
+    private boolean hasSubmissionDependencies(Long submissionId) {
+        if (submissionId == null) {
+            return false;
+        }
+        return submissionFileService.count(
+                Wrappers.<SubmissionFile>lambdaQuery()
+                        .eq(SubmissionFile::getSubmissionId, submissionId)
+        ) > 0 || reviewRecordService.count(
+                Wrappers.<ReviewRecord>lambdaQuery()
+                        .eq(ReviewRecord::getSubmissionId, submissionId)
+        ) > 0;
+    }
+
+    private boolean equalsValue(Long left, Long right) {
+        if (left == null) {
+            return right == null;
+        }
+        return left.equals(right);
     }
 
     private boolean hasRole(LoginUserPrincipal currentUser, String roleCode) {

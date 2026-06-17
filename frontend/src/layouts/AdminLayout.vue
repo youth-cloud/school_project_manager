@@ -1,18 +1,50 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Document, Folder, House, Key, Paperclip, SwitchButton, User } from '@element-plus/icons-vue'
+import {
+  Bell,
+  CollectionTag,
+  DataAnalysis,
+  Document,
+  Files,
+  Folder,
+  House,
+  Key,
+  Medal,
+  Memo,
+  Notebook,
+  Paperclip,
+  Reading,
+  School,
+  SetUp,
+  SwitchButton,
+  Tickets,
+  User,
+  UserFilled,
+} from '@element-plus/icons-vue'
 
 import { changePasswordApi } from '@/api/auth'
 import ChangePasswordDialog from '@/components/ChangePasswordDialog.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+const logoUrl = `${import.meta.env.BASE_URL}064b08b0-66ae-46d6-85c4-bf0d3b1fb191.png`
+const beianText = '吉ICP备2026003158号-1'
+const beianUrl = 'https://beian.miit.gov.cn/'
 
 const displayName = computed(() => userStore.userInfo?.realName || userStore.userInfo?.username || '未登录用户')
-const roleText = computed(() => (userStore.userInfo?.roles || []).join(' / ') || '暂无角色')
+const roleLabelMap: Record<string, string> = {
+  ADMIN: '管理员',
+  TEACHER: '教师',
+  STUDENT: '学生',
+}
+const roleText = computed(() => {
+  const roles = userStore.userInfo?.roles || []
+  return roles.map((item) => roleLabelMap[item] || item).join(' / ') || '暂无角色'
+})
 const isAdmin = computed(() => (userStore.userInfo?.roles || []).includes('ADMIN'))
 const passwordDialogVisible = ref(false)
 const passwordSubmitting = ref(false)
@@ -21,6 +53,98 @@ const passwordForm = reactive({
   newPassword: '',
   confirmPassword: '',
 })
+
+const navSections = [
+  {
+    title: '工作台',
+    items: [
+      { index: '/', label: '首页', icon: House },
+      { index: '/profile', label: '个人信息', icon: User },
+    ],
+  },
+  {
+    title: '项目流程',
+    items: [
+      { index: '/notices', label: '公告管理', icon: Bell },
+      { index: '/project-topics', label: '课题管理', icon: CollectionTag },
+      { index: '/topic-applications', label: '选题申请', icon: Tickets },
+      { index: '/project-group-applications', label: '建组申请', icon: Memo },
+      { index: '/project-groups', label: '项目组管理', icon: School },
+      { index: '/project-group-members', label: '项目组成员', icon: UserFilled },
+    ],
+  },
+  {
+    title: '过程管理',
+    items: [
+      { index: '/stage-tasks', label: '阶段任务', icon: Folder },
+      { index: '/stage-submissions', label: '阶段提交', icon: Document },
+      { index: '/submission-files', label: '提交附件', icon: Paperclip },
+      { index: '/review-records', label: '审核记录', icon: Notebook },
+      { index: '/weekly-reports', label: '周报管理', icon: Reading },
+    ],
+  },
+  {
+    title: '考核结果',
+    items: [
+      { index: '/defense-schedules', label: '答辩安排', icon: Files },
+      { index: '/defense-records', label: '答辩记录', icon: Medal },
+      { index: '/score-records', label: '成绩记录', icon: DataAnalysis },
+    ],
+  },
+  {
+    title: '基础数据',
+    items: [
+      { index: '/training-batches', label: '实训批次', icon: SetUp },
+      { index: '/edu-classes', label: '班级管理', icon: School },
+      { index: '/edu-courses', label: '课程管理', icon: CollectionTag },
+      { index: '/operation-logs', label: '操作日志', icon: Document },
+      { index: '/sys-users', label: '用户管理', icon: User, adminOnly: true },
+    ],
+  },
+]
+
+const visibleNavSections = computed(() =>
+  navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => !item.adminOnly || isAdmin.value),
+    }))
+    .filter((section) => section.items.length > 0),
+)
+
+const currentPageTitle = computed(() => {
+  for (const section of visibleNavSections.value) {
+    const matched = section.items.find((item) => item.index === route.path)
+    if (matched) {
+      return matched.label
+    }
+  }
+  return '首页'
+})
+
+const pageGroupTitle = computed(() => {
+  const matchedSection = visibleNavSections.value.find((section) =>
+    section.items.some((item) => item.index === route.path),
+  )
+  return matchedSection?.title || '工作台'
+})
+
+const currentDateText = computed(() =>
+  new Intl.DateTimeFormat('zh-CN', {
+    month: 'long',
+    day: 'numeric',
+    weekday: 'long',
+  }).format(new Date()),
+)
+
+const greetingText = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return '上午好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
+})
+
+const userInitial = computed(() => (displayName.value || 'U').trim().charAt(0).toUpperCase())
 
 const openChangePassword = () => {
   passwordForm.oldPassword = ''
@@ -77,117 +201,55 @@ onMounted(() => {
       <el-aside width="236px" class="layout-aside">
         <div class="logo">
           <div class="logo-mark">
-            <img src="/064b08b0-66ae-46d6-85c4-bf0d3b1fb191.png" alt="平台标识" class="logo-image" />
+            <img :src="logoUrl" alt="平台标识" class="logo-image" />
           </div>
           <div>
             <div class="logo-title">学校实训管理平台</div>
+            <div class="logo-subtitle">Project Training Workspace</div>
           </div>
         </div>
 
-        <el-menu router default-active="/" class="menu" background-color="transparent" text-color="#dbeafe" active-text-color="#ffffff">
-          <el-menu-item index="/">
-            <el-icon><House /></el-icon>
-            <span>首页</span>
-          </el-menu-item>
-          <el-menu-item index="/profile">
-            <el-icon><User /></el-icon>
-            <span>个人信息</span>
-          </el-menu-item>
-          <el-menu-item index="/notices">
-            <el-icon><Document /></el-icon>
-            <span>公告管理</span>
-          </el-menu-item>
-          <el-menu-item index="/stage-tasks">
-            <el-icon><Folder /></el-icon>
-            <span>阶段任务</span>
-          </el-menu-item>
-          <el-menu-item index="/stage-submissions">
-            <el-icon><Document /></el-icon>
-            <span>阶段提交</span>
-          </el-menu-item>
-          <el-menu-item index="/submission-files">
-            <el-icon><Paperclip /></el-icon>
-            <span>提交附件</span>
-          </el-menu-item>
-          <el-menu-item index="/review-records">
-            <el-icon><Document /></el-icon>
-            <span>审核记录</span>
-          </el-menu-item>
-          <el-menu-item index="/score-records">
-            <el-icon><Document /></el-icon>
-            <span>成绩记录</span>
-          </el-menu-item>
-          <el-menu-item index="/weekly-reports">
-            <el-icon><Document /></el-icon>
-            <span>周报管理</span>
-          </el-menu-item>
-          <el-menu-item index="/defense-schedules">
-            <el-icon><Document /></el-icon>
-            <span>答辩安排</span>
-          </el-menu-item>
-          <el-menu-item index="/defense-records">
-            <el-icon><Document /></el-icon>
-            <span>答辩记录</span>
-          </el-menu-item>
-          <el-menu-item index="/topic-applications">
-            <el-icon><Document /></el-icon>
-            <span>选题申请</span>
-          </el-menu-item>
-          <el-menu-item index="/project-topics">
-            <el-icon><Document /></el-icon>
-            <span>课题管理</span>
-          </el-menu-item>
-          <el-menu-item index="/project-groups">
-            <el-icon><Document /></el-icon>
-            <span>项目组管理</span>
-          </el-menu-item>
-          <el-menu-item index="/project-group-applications">
-            <el-icon><Document /></el-icon>
-            <span>建组申请</span>
-          </el-menu-item>
-          <el-menu-item index="/project-group-members">
-            <el-icon><Document /></el-icon>
-            <span>项目组成员</span>
-          </el-menu-item>
-          <el-menu-item index="/training-batches">
-            <el-icon><Document /></el-icon>
-            <span>实训批次</span>
-          </el-menu-item>
-          <el-menu-item index="/edu-classes">
-            <el-icon><Document /></el-icon>
-            <span>班级管理</span>
-          </el-menu-item>
-          <el-menu-item index="/edu-courses">
-            <el-icon><Document /></el-icon>
-            <span>课程管理</span>
-          </el-menu-item>
-          <el-menu-item index="/operation-logs">
-            <el-icon><Document /></el-icon>
-            <span>操作日志</span>
-          </el-menu-item>
-          <el-menu-item v-if="isAdmin" index="/sys-users">
-            <el-icon><User /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
+        <el-menu
+          router
+          :default-active="route.path"
+          class="menu"
+          background-color="transparent"
+          text-color="#dbeafe"
+          active-text-color="#ffffff"
+        >
+          <template v-for="section in visibleNavSections" :key="section.title">
+            <div class="menu-section-title">{{ section.title }}</div>
+            <el-menu-item v-for="item in section.items" :key="item.index" :index="item.index">
+              <el-icon><component :is="item.icon" /></el-icon>
+              <span>{{ item.label }}</span>
+            </el-menu-item>
+          </template>
         </el-menu>
       </el-aside>
 
       <el-container>
         <el-header class="layout-header">
           <div class="header-left">
-            <h2>后台管理端</h2>
+            <div class="header-title-wrap">
+              <div class="header-kicker">{{ pageGroupTitle }}</div>
+              <h2>{{ currentPageTitle }}</h2>
+            </div>
+            <div class="header-date">{{ currentDateText }}</div>
           </div>
 
           <div class="header-right">
             <div class="user-panel">
-              <div class="user-name">{{ displayName }}</div>
-              <div class="user-role">{{ roleText }}</div>
+              <div class="user-avatar">{{ userInitial }}</div>
+              <div class="user-meta">
+                <div class="user-name">{{ greetingText }}，{{ displayName }}</div>
+                <div class="user-role">{{ roleText }}</div>
+              </div>
             </div>
-            <el-button plain @click="openChangePassword">
+            <el-button class="header-action" plain @click="openChangePassword">
               <el-icon><Key /></el-icon>
               修改密码
             </el-button>
-            <el-button type="primary" plain @click="handleLogout">
+            <el-button class="header-action primary-outline" type="primary" plain @click="handleLogout">
               <el-icon><SwitchButton /></el-icon>
               退出登录
             </el-button>
@@ -195,7 +257,12 @@ onMounted(() => {
         </el-header>
 
         <el-main class="layout-main">
-          <router-view />
+          <div class="layout-main-content">
+            <router-view />
+          </div>
+          <div class="layout-footer">
+            <a :href="beianUrl" target="_blank" rel="noopener noreferrer">{{ beianText }}</a>
+          </div>
         </el-main>
       </el-container>
     </el-container>
@@ -212,24 +279,42 @@ onMounted(() => {
 <style scoped lang="scss">
 .admin-layout {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f3f8ff 0%, #f7fbff 100%);
 }
+
 .layout-container {
   min-height: 100vh;
 }
+
 .layout-aside {
-  background: linear-gradient(180deg, #0f3f91 0%, #174ea6 100%);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgb(115 176 255 / 22%), transparent 24%),
+    linear-gradient(180deg, #0f3f91 0%, #184aa0 48%, #0f3278 100%);
   color: #fff;
-  box-shadow: 6px 0 24px rgb(21 77 165 / 16%);
+  box-shadow: 8px 0 30px rgb(21 77 165 / 16%);
 }
+
+.layout-aside::after {
+  content: '';
+  position: absolute;
+  inset: auto -60px -80px auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 16%) 0%, rgb(255 255 255 / 0%) 68%);
+  pointer-events: none;
+}
+
 .logo {
   display: flex;
   align-items: center;
   gap: 14px;
-  height: 72px;
-  padding: 0 18px;
+  height: 78px;
+  padding: 0 20px;
   border-bottom: 1px solid rgb(255 255 255 / 12%);
 }
+
 .logo-mark {
   width: 46px;
   height: 46px;
@@ -246,52 +331,173 @@ onMounted(() => {
   height: 100%;
   object-fit: cover;
 }
+
 .logo-title {
   font-size: 16px;
   font-weight: 700;
 }
+
+.logo-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgb(219 234 254 / 76%);
+}
+
 .menu {
   border-right: none;
-  padding: 12px 8px;
+  padding: 14px 10px 20px;
+  height: calc(100vh - 78px);
+  overflow-y: auto;
 }
+
+:deep(.el-menu-item) {
+  height: 46px;
+  margin: 4px 0;
+  border-radius: 14px;
+}
+
+:deep(.el-menu-item .el-icon) {
+  font-size: 16px;
+}
+
+:deep(.el-menu-item.is-active) {
+  background: linear-gradient(90deg, rgb(255 255 255 / 20%) 0%, rgb(255 255 255 / 12%) 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 12%);
+}
+
+.menu-section-title {
+  padding: 14px 12px 6px;
+  color: rgb(219 234 254 / 60%);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .layout-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 72px;
   padding: 0 24px;
-  background: rgb(255 255 255 / 88%);
-  border-bottom: 1px solid #e6eef8;
-  backdrop-filter: blur(12px);
+  background: rgb(255 255 255 / 72%);
+  border-bottom: 1px solid rgba(120, 148, 196, 0.12);
+  backdrop-filter: blur(18px);
 }
+
 .header-left {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 18px;
 }
+
+.header-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.header-kicker {
+  color: #6d7f9d;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .header-left h2 {
   margin: 0;
-  font-size: 22px;
-  color: #1f2d3d;
+  font-size: 24px;
+  color: #1d2b45;
 }
+
+.header-date {
+  padding: 8px 12px;
+  border: 1px solid rgba(120, 148, 196, 0.14);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 68%);
+  color: #6d7f9d;
+  font-size: 13px;
+}
+
 .header-right {
   display: flex;
   align-items: center;
   gap: 14px;
 }
+
 .user-panel {
-  text-align: right;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 8px;
+  border: 1px solid rgba(120, 148, 196, 0.12);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 72%);
 }
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2f6bff 0%, #74a3ff 100%);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 10px 20px rgb(47 107 255 / 24%);
+}
+
+.user-meta {
+  text-align: left;
+}
+
 .user-name {
   font-weight: 600;
-  color: #1f2d3d;
+  color: #1d2b45;
 }
+
 .user-role {
   margin-top: 4px;
   font-size: 12px;
   color: #7b8ba1;
 }
+
+.header-action {
+  height: 40px;
+  padding: 0 16px;
+  border-color: rgba(120, 148, 196, 0.18);
+  background: rgb(255 255 255 / 72%);
+}
+
+.primary-outline {
+  border-color: rgba(47, 107, 255, 0.18);
+}
+
 .layout-main {
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 72px);
+  padding: 28px 28px 18px;
+}
+
+.layout-main-content {
+  flex: 1;
+}
+
+.layout-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 18px;
+}
+
+.layout-footer a {
+  color: #7b8ba1;
+  font-size: 13px;
+}
+
+.layout-footer a:hover {
+  color: #2f6bff;
 }
 </style>

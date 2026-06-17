@@ -10,10 +10,28 @@ import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.edu.dto.TrainingBatchCreateDTO;
 import org.example.backend.modules.edu.dto.TrainingBatchPageQueryDTO;
 import org.example.backend.modules.edu.dto.TrainingBatchUpdateDTO;
+import org.example.backend.modules.edu.entity.DefenseSchedule;
+import org.example.backend.modules.edu.entity.ProjectGroup;
+import org.example.backend.modules.edu.entity.ProjectGroupApplication;
+import org.example.backend.modules.edu.entity.ProjectTopic;
+import org.example.backend.modules.edu.entity.ScoreRecord;
+import org.example.backend.modules.edu.entity.StageSubmission;
+import org.example.backend.modules.edu.entity.StageTask;
+import org.example.backend.modules.edu.entity.TopicApplication;
 import org.example.backend.modules.edu.entity.TrainingBatch;
+import org.example.backend.modules.edu.entity.WeeklyReport;
+import org.example.backend.modules.edu.service.DefenseScheduleService;
 import org.example.backend.modules.edu.service.EduClassService;
 import org.example.backend.modules.edu.service.EduCourseService;
+import org.example.backend.modules.edu.service.ProjectGroupApplicationService;
+import org.example.backend.modules.edu.service.ProjectGroupService;
+import org.example.backend.modules.edu.service.ProjectTopicService;
+import org.example.backend.modules.edu.service.ScoreRecordService;
+import org.example.backend.modules.edu.service.StageSubmissionService;
+import org.example.backend.modules.edu.service.StageTaskService;
+import org.example.backend.modules.edu.service.TopicApplicationService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
+import org.example.backend.modules.edu.service.WeeklyReportService;
 import org.example.backend.modules.system.service.SysUserService;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -27,15 +45,42 @@ public class TrainingBatchController {
     private final TrainingBatchService trainingBatchService;
     private final EduCourseService eduCourseService;
     private final EduClassService eduClassService;
+    private final ProjectTopicService projectTopicService;
+    private final ProjectGroupService projectGroupService;
+    private final TopicApplicationService topicApplicationService;
+    private final ProjectGroupApplicationService projectGroupApplicationService;
+    private final StageTaskService stageTaskService;
+    private final WeeklyReportService weeklyReportService;
+    private final StageSubmissionService stageSubmissionService;
+    private final ScoreRecordService scoreRecordService;
+    private final DefenseScheduleService defenseScheduleService;
     private final SysUserService sysUserService;
 
     public TrainingBatchController(TrainingBatchService trainingBatchService,
                                    EduCourseService eduCourseService,
                                    EduClassService eduClassService,
+                                   ProjectTopicService projectTopicService,
+                                   ProjectGroupService projectGroupService,
+                                   TopicApplicationService topicApplicationService,
+                                   ProjectGroupApplicationService projectGroupApplicationService,
+                                   StageTaskService stageTaskService,
+                                   WeeklyReportService weeklyReportService,
+                                   StageSubmissionService stageSubmissionService,
+                                   ScoreRecordService scoreRecordService,
+                                   DefenseScheduleService defenseScheduleService,
                                    SysUserService sysUserService) {
         this.trainingBatchService = trainingBatchService;
         this.eduCourseService = eduCourseService;
         this.eduClassService = eduClassService;
+        this.projectTopicService = projectTopicService;
+        this.projectGroupService = projectGroupService;
+        this.topicApplicationService = topicApplicationService;
+        this.projectGroupApplicationService = projectGroupApplicationService;
+        this.stageTaskService = stageTaskService;
+        this.weeklyReportService = weeklyReportService;
+        this.stageSubmissionService = stageSubmissionService;
+        this.scoreRecordService = scoreRecordService;
+        this.defenseScheduleService = defenseScheduleService;
         this.sysUserService = sysUserService;
     }
 
@@ -136,9 +181,17 @@ public class TrainingBatchController {
 
     @PutMapping
     public Result<TrainingBatch>  update(@Valid @RequestBody TrainingBatchUpdateDTO dto){
+        LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
+        if (currentUser == null) {
+            return Result.fail(401, "当前未登录");
+        }
         TrainingBatch existing=trainingBatchService.getById(dto.getId());
         if(existing==null){
             return Result.fail(404,"实训批次不存在");
+        }
+        if (!sysUserService.hasRole(currentUser.getUserId(), "ADMIN")
+                && !currentUser.getUserId().equals(existing.getTeacherId())) {
+            return Result.fail(403, "教师只能修改绑定给自己的实训批次");
         }
 
         String operatorError = validateBatchOperator(dto.getTeacherId());
@@ -183,6 +236,10 @@ public class TrainingBatchController {
         TrainingBatch existing=trainingBatchService.getById(id);
         if(existing==null){
             return Result.fail(404,"实训批次不存在");
+        }
+        Result<Void> dependencyValidationResult = validateBatchDeleteDependencies(id);
+        if (dependencyValidationResult != null) {
+            return Result.fail(dependencyValidationResult.getCode(), dependencyValidationResult.getMessage());
         }
         if (sysUserService.hasRole(currentUser.getUserId(), "ADMIN")) {
             return Result.success(trainingBatchService.removeById(id));
@@ -255,6 +312,73 @@ public class TrainingBatchController {
         if (defenseTime != null && defenseTime.isBefore(startTime)) {
             return "答辩时间不能早于开始时间";
         }
+        return null;
+    }
+
+    private Result<Void> validateBatchDeleteDependencies(Long batchId) {
+        if (projectTopicService.count(
+                Wrappers.<ProjectTopic>lambdaQuery()
+                        .eq(ProjectTopic::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联课题，不能删除");
+        }
+
+        if (projectGroupService.count(
+                Wrappers.<ProjectGroup>lambdaQuery()
+                        .eq(ProjectGroup::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联项目组，不能删除");
+        }
+
+        if (topicApplicationService.count(
+                Wrappers.<TopicApplication>lambdaQuery()
+                        .eq(TopicApplication::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联选题申请，不能删除");
+        }
+
+        if (projectGroupApplicationService.count(
+                Wrappers.<ProjectGroupApplication>lambdaQuery()
+                        .eq(ProjectGroupApplication::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联建组申请，不能删除");
+        }
+
+        if (stageTaskService.count(
+                Wrappers.<StageTask>lambdaQuery()
+                        .eq(StageTask::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联阶段任务，不能删除");
+        }
+
+        if (weeklyReportService.count(
+                Wrappers.<WeeklyReport>lambdaQuery()
+                        .eq(WeeklyReport::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联周报，不能删除");
+        }
+
+        if (stageSubmissionService.count(
+                Wrappers.<StageSubmission>lambdaQuery()
+                        .eq(StageSubmission::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联阶段提交，不能删除");
+        }
+
+        if (scoreRecordService.count(
+                Wrappers.<ScoreRecord>lambdaQuery()
+                        .eq(ScoreRecord::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联成绩记录，不能删除");
+        }
+
+        if (defenseScheduleService.count(
+                Wrappers.<DefenseSchedule>lambdaQuery()
+                        .eq(DefenseSchedule::getBatchId, batchId)
+        ) > 0) {
+            return Result.fail(400, "该实训批次已有关联答辩安排，不能删除");
+        }
+
         return null;
     }
 }

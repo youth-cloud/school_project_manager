@@ -10,9 +10,13 @@ import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.edu.dto.TopicApplicationCreateDTO;
 import org.example.backend.modules.edu.dto.TopicApplicationPageQueryDTO;
 import org.example.backend.modules.edu.dto.TopicApplicationReviewDTO;
+import org.example.backend.modules.edu.entity.ProjectGroup;
+import org.example.backend.modules.edu.entity.ProjectGroupMember;
 import org.example.backend.modules.edu.entity.ProjectTopic;
 import org.example.backend.modules.edu.entity.TopicApplication;
 import org.example.backend.modules.edu.entity.TrainingBatch;
+import org.example.backend.modules.edu.service.ProjectGroupMemberService;
+import org.example.backend.modules.edu.service.ProjectGroupService;
 import org.example.backend.modules.edu.service.ProjectTopicService;
 import org.example.backend.modules.edu.service.TopicApplicationService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
@@ -20,7 +24,9 @@ import org.example.backend.modules.system.service.SysUserService;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -29,15 +35,21 @@ public class TopicApplicationController {
     private final TopicApplicationService topicApplicationService;
     private final TrainingBatchService trainingBatchService;
     private final ProjectTopicService projectTopicService;
+    private final ProjectGroupService projectGroupService;
+    private final ProjectGroupMemberService projectGroupMemberService;
     private final SysUserService sysUserService;
 
     public TopicApplicationController(TopicApplicationService topicApplicationService,
                                       TrainingBatchService trainingBatchService,
                                       ProjectTopicService projectTopicService,
+                                      ProjectGroupService projectGroupService,
+                                      ProjectGroupMemberService projectGroupMemberService,
                                       SysUserService sysUserService) {
         this.topicApplicationService = topicApplicationService;
         this.trainingBatchService = trainingBatchService;
         this.projectTopicService = projectTopicService;
+        this.projectGroupService = projectGroupService;
+        this.projectGroupMemberService = projectGroupMemberService;
         this.sysUserService = sysUserService;
     }
 
@@ -105,6 +117,15 @@ public class TopicApplicationController {
         if (!dto.getBatchId().equals(projectTopic.getBatchId())) {
             return Result.fail(400, "课题不属于当前实训批次");
         }
+        Result<Void> studentTopicValidationResult = validateStudentTopicApplication(
+                currentUser.getUserId(),
+                dto.getBatchId(),
+                null,
+                false
+        );
+        if (studentTopicValidationResult != null) {
+            return Result.fail(studentTopicValidationResult.getCode(), studentTopicValidationResult.getMessage());
+        }
 
         TopicApplication topicApplication = new TopicApplication();
         topicApplication.setBatchId(dto.getBatchId());
@@ -158,6 +179,17 @@ public class TopicApplicationController {
         if (!currentUser.getUserId().equals(projectTopic.getTeacherId())) {
             return Result.fail(403, "只有课题发布教师可以审核该申请");
         }
+        if ("APPROVED".equals(dto.getStatus())) {
+            Result<Void> studentTopicValidationResult = validateStudentTopicApplication(
+                    existing.getStudentId(),
+                    existing.getBatchId(),
+                    existing.getId(),
+                    true
+            );
+            if (studentTopicValidationResult != null) {
+                return Result.fail(studentTopicValidationResult.getCode(), studentTopicValidationResult.getMessage());
+            }
+        }
 
         TopicApplication topicApplication = new TopicApplication();
         topicApplication.setId(dto.getId());
@@ -166,6 +198,7 @@ public class TopicApplicationController {
         topicApplication.setReviewComment(dto.getReviewComment());
         topicApplication.setReviewTime(LocalDateTime.now());
         topicApplicationService.updateById(topicApplication);
+        syncTopicSelectedCount(existing.getTopicId());
         return Result.success(topicApplicationService.getById(dto.getId()));
     }
 
@@ -212,5 +245,91 @@ public class TopicApplicationController {
             return false;
         }
         return sysUserService.hasRole(currentUser.getUserId(), roleCode);
+    }
+
+    private void syncTopicSelectedCount(Long topicId) {
+        if (topicId == null) {
+            return;
+        }
+
+        ProjectTopic projectTopic = projectTopicService.getById(topicId);
+        if (projectTopic == null) {
+            return;
+        }
+
+        int approvedStudentCount = countApprovedStudents(topicId);
+        Integer currentSelectedCount = projectTopic.getSelectedCount();
+        if (currentSelectedCount != null && currentSelectedCount == approvedStudentCount) {
+            return;
+        }
+
+        ProjectTopic updateTopic = new ProjectTopic();
+        updateTopic.setId(topicId);
+        updateTopic.setSelectedCount(approvedStudentCount);
+        projectTopicService.updateById(updateTopic);
+    }
+
+    private int countApprovedStudents(Long topicId) {
+        Set<Long> approvedStudentIds = new LinkedHashSet<>();
+        topicApplicationService.list(
+                Wrappers.<TopicApplication>lambdaQuery()
+                        .eq(TopicApplication::getTopicId, topicId)
+                        .eq(TopicApplication::getStatus, "APPROVED")
+        ).forEach(item -> {
+            if (item.getStudentId() != null) {
+                approvedStudentIds.add(item.getStudentId());
+            }
+        });
+        return approvedStudentIds.size();
+    }
+
+    private Result<Void> validateStudentTopicApplication(Long studentId,
+                                                         Long batchId,
+                                                         Long excludeApplicationId,
+                                                         boolean approvalOnly) {
+        if (studentId == null || batchId == null) {
+            return null;
+        }
+
+        List<TopicApplication> existingApplications = topicApplicationService.list(
+                Wrappers.<TopicApplication>lambdaQuery()
+                        .eq(TopicApplication::getStudentId, studentId)
+                        .eq(TopicApplication::getBatchId, batchId)
+                        .in(TopicApplication::getStatus, "PENDING", "APPROVED")
+                        .ne(excludeApplicationId != null, TopicApplication::getId, excludeApplicationId)
+        );
+        if (!existingApplications.isEmpty()) {
+            boolean hasApproved = existingApplications.stream().anyMatch(item -> "APPROVED".equals(item.getStatus()));
+            if (hasApproved) {
+                return Result.fail(400, "该学生在当前批次已有已通过的选题申请，不能重复锁定其他课题");
+            }
+            if (!approvalOnly) {
+                return Result.fail(400, "该学生在当前批次已有待审核选题申请，不能重复提交");
+            }
+        }
+
+        List<ProjectGroupMember> joinedMembers = projectGroupMemberService.list(
+                Wrappers.<ProjectGroupMember>lambdaQuery()
+                        .eq(ProjectGroupMember::getUserId, studentId)
+        );
+        if (joinedMembers.isEmpty()) {
+            return null;
+        }
+
+        Set<Long> joinedGroupIds = joinedMembers.stream()
+                .map(ProjectGroupMember::getGroupId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        if (joinedGroupIds.isEmpty()) {
+            return null;
+        }
+
+        boolean alreadyJoinedBatchGroup = projectGroupService.listByIds(joinedGroupIds).stream()
+                .anyMatch(group -> batchId.equals(group.getBatchId()));
+        if (alreadyJoinedBatchGroup) {
+            return Result.fail(400, "该学生已加入当前批次下的正式项目组，不能重复申请或审批其他课题");
+        }
+
+        return null;
     }
 }

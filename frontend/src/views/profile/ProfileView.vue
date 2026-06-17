@@ -16,6 +16,7 @@ const formData = reactive({
 const roleText = computed(() => (profile.value?.roles || []).join(' / ') || '暂无角色')
 const statusText = computed(() => (profile.value?.status === 1 ? '启用' : '停用'))
 const isStudent = computed(() => (profile.value?.roles || []).includes('STUDENT'))
+const heroIdentity = computed(() => profile.value?.realName || profile.value?.username || '当前账号')
 
 const fillForm = (data: ProfileInfo) => {
   formData.phone = data.phone || ''
@@ -57,10 +58,14 @@ onMounted(() => {
   <div class="profile-page" v-loading="loading">
     <el-card class="hero-card" shadow="never">
       <div class="hero-content">
-        <div>
+        <div class="hero-main">
           <div class="hero-badge">Profile</div>
           <h1>个人信息</h1>
-          <p>这里维护当前登录账号的基础资料与联系方式，密码修改可直接使用顶部入口。</p>
+        </div>
+        <div class="hero-side">
+          <div class="hero-side-label">当前账号</div>
+          <div class="hero-side-value">{{ heroIdentity }}</div>
+          <div class="hero-side-meta">{{ roleText }}</div>
         </div>
       </div>
     </el-card>
@@ -126,25 +131,31 @@ onMounted(() => {
 .profile-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
 }
 
 .hero-card,
 .info-card {
-  border-radius: 20px;
-  border: none;
-  box-shadow: 0 14px 32px rgb(57 118 201 / 8%);
+  border-radius: 24px;
+  border: 1px solid rgba(120, 148, 196, 0.14);
+  box-shadow: 0 18px 38px rgb(57 118 201 / 8%);
 }
 
 .hero-card {
-  background: linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #ffffff 100%);
+  background:
+    radial-gradient(circle at top right, rgba(116, 166, 255, 0.18), transparent 24%),
+    linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #ffffff 100%);
 }
 
 .hero-content {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 20px;
+}
+
+.hero-main {
+  max-width: 760px;
 }
 
 .hero-badge {
@@ -159,20 +170,54 @@ onMounted(() => {
 }
 
 .hero-content h1 {
-  margin: 0 0 10px;
+  margin: 0;
   color: #1f2d3d;
-  font-size: 28px;
+  font-size: 30px;
 }
 
-.hero-content p {
-  margin: 0;
-  color: #6b7a90;
-  line-height: 1.8;
+.hero-side {
+  min-width: 240px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(120, 148, 196, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.hero-side-label {
+  color: #7b8ba1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-side-value {
+  margin-top: 10px;
+  color: #1f2d3d;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.hero-side-meta {
+  margin-top: 10px;
+  color: #7b8ba1;
+  line-height: 1.7;
 }
 
 .card-title {
   font-size: 18px;
   font-weight: 700;
   color: #1f2d3d;
+}
+
+@media (max-width: 1024px) {
+  .hero-content {
+    flex-direction: column;
+  }
+
+  .hero-side {
+    min-width: 0;
+  }
 }
 </style>

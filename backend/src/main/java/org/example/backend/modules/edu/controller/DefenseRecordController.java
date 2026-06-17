@@ -155,6 +155,9 @@ public class DefenseRecordController {
         if (!currentUser.getUserId().equals(existing.getTeacherId())) {
             return Result.fail(403, "当前用户无权修改该答辩记录");
         }
+        if (!existing.getScheduleId().equals(dto.getScheduleId())) {
+            return Result.fail(400, "答辩记录创建后不允许变更所属答辩安排");
+        }
 
         DefenseSchedule defenseSchedule = defenseScheduleService.getById(dto.getScheduleId());
         if (defenseSchedule == null) {

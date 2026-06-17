@@ -10,15 +10,26 @@ import org.example.backend.modules.auth.security.SecurityUtils;
 import org.example.backend.modules.edu.dto.ProjectGroupCreateDTO;
 import org.example.backend.modules.edu.dto.ProjectGroupPageQueryDTO;
 import org.example.backend.modules.edu.dto.ProjectGroupUpdateDTO;
+import org.example.backend.modules.edu.entity.DefenseSchedule;
 import org.example.backend.modules.edu.entity.ProjectGroup;
+import org.example.backend.modules.edu.entity.ProjectGroupApplication;
 import org.example.backend.modules.edu.entity.ProjectGroupMember;
 import org.example.backend.modules.edu.entity.ProjectTopic;
+import org.example.backend.modules.edu.entity.ScoreRecord;
+import org.example.backend.modules.edu.entity.StageSubmission;
 import org.example.backend.modules.edu.entity.TrainingBatch;
+import org.example.backend.modules.edu.entity.WeeklyReport;
+import org.example.backend.modules.edu.service.DefenseScheduleService;
 import org.example.backend.modules.edu.service.ProjectGroupMemberService;
 import org.example.backend.modules.edu.service.ProjectGroupService;
+import org.example.backend.modules.edu.service.ProjectGroupApplicationService;
 import org.example.backend.modules.edu.service.ProjectTopicService;
+import org.example.backend.modules.edu.service.ScoreRecordService;
+import org.example.backend.modules.edu.service.StageSubmissionService;
 import org.example.backend.modules.edu.service.TrainingBatchService;
+import org.example.backend.modules.edu.service.WeeklyReportService;
 import org.example.backend.modules.system.service.SysUserService;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,17 +43,32 @@ public class ProjectGroupController {
     private final TrainingBatchService trainingBatchService;
     private final ProjectTopicService projectTopicService;
     private final ProjectGroupMemberService projectGroupMemberService;
+    private final WeeklyReportService weeklyReportService;
+    private final StageSubmissionService stageSubmissionService;
+    private final ScoreRecordService scoreRecordService;
+    private final DefenseScheduleService defenseScheduleService;
+    private final ProjectGroupApplicationService projectGroupApplicationService;
     private final SysUserService sysUserService;
 
     public ProjectGroupController(ProjectGroupService projectGroupService,
                                   TrainingBatchService trainingBatchService,
                                   ProjectTopicService projectTopicService,
                                   ProjectGroupMemberService projectGroupMemberService,
+                                  WeeklyReportService weeklyReportService,
+                                  StageSubmissionService stageSubmissionService,
+                                  ScoreRecordService scoreRecordService,
+                                  DefenseScheduleService defenseScheduleService,
+                                  ProjectGroupApplicationService projectGroupApplicationService,
                                   SysUserService sysUserService) {
         this.projectGroupService = projectGroupService;
         this.trainingBatchService = trainingBatchService;
         this.projectTopicService = projectTopicService;
         this.projectGroupMemberService = projectGroupMemberService;
+        this.weeklyReportService = weeklyReportService;
+        this.stageSubmissionService = stageSubmissionService;
+        this.scoreRecordService = scoreRecordService;
+        this.defenseScheduleService = defenseScheduleService;
+        this.projectGroupApplicationService = projectGroupApplicationService;
         this.sysUserService = sysUserService;
     }
 
@@ -120,12 +146,6 @@ public class ProjectGroupController {
             return Result.fail(400, "当前组长不是学生角色");
         }
 
-        LambdaQueryWrapper<ProjectGroup> wrapper = Wrappers.lambdaQuery();
-        wrapper.eq(ProjectGroup::getTopicId, dto.getTopicId());
-        if (projectGroupService.count(wrapper) > 0) {
-            return Result.fail(400, "该课题已创建项目组");
-        }
-
         ProjectGroup projectGroup = new ProjectGroup();
         projectGroup.setBatchId(dto.getBatchId());
         projectGroup.setTopicId(dto.getTopicId());
@@ -171,6 +191,12 @@ public class ProjectGroupController {
         if (existing == null) {
             return Result.fail(404, "项目组不存在");
         }
+        if (!currentUser.getUserId().equals(existing.getTeacherId())) {
+            return Result.fail(403, "当前教师不是该项目组指导教师，不能修改项目组");
+        }
+        if (!existing.getBatchId().equals(dto.getBatchId()) || !existing.getTopicId().equals(dto.getTopicId())) {
+            return Result.fail(400, "正式项目组创建后不允许变更所属批次或课题");
+        }
 
         TrainingBatch trainingBatch = trainingBatchService.getById(dto.getBatchId());
         if (trainingBatch == null) {
@@ -213,6 +239,7 @@ public class ProjectGroupController {
         return Result.success(projectGroupService.getById(dto.getId()));
     }
 
+    @Transactional
     @DeleteMapping("/{id}")
     public Result<Boolean> deleteById(@PathVariable Long id) {
         LoginUserPrincipal currentUser = SecurityUtils.getCurrentUser();
@@ -223,7 +250,13 @@ public class ProjectGroupController {
         if (existing == null) {
             return Result.fail(404,"项目组不存在");
         }
+        Result<Void> dependencyValidationResult = validateGroupDeleteDependencies(id);
+        if (dependencyValidationResult != null) {
+            return Result.fail(dependencyValidationResult.getCode(), dependencyValidationResult.getMessage());
+        }
         if (sysUserService.hasRole(currentUser.getUserId(), "ADMIN")) {
+            clearGeneratedGroupReference(id);
+            removeGroupMembers(id);
             return Result.success(projectGroupService.removeById(id));
         }
         if (!sysUserService.hasRole(currentUser.getUserId(), "TEACHER")) {
@@ -232,6 +265,8 @@ public class ProjectGroupController {
         if (!currentUser.getUserId().equals(existing.getTeacherId())) {
             return Result.fail(403, "当前教师不是该项目组指导教师，不能删除项目组");
         }
+        clearGeneratedGroupReference(id);
+        removeGroupMembers(id);
         return Result.success(projectGroupService.removeById(id));
     }
 
@@ -263,5 +298,52 @@ public class ProjectGroupController {
         return projectGroupMemberService.count(Wrappers.<ProjectGroupMember>lambdaQuery()
                 .eq(ProjectGroupMember::getGroupId, projectGroup.getId())
                 .eq(ProjectGroupMember::getUserId, currentUser.getUserId())) > 0;
+    }
+
+    private void removeGroupMembers(Long groupId) {
+        projectGroupMemberService.remove(
+                Wrappers.<ProjectGroupMember>lambdaQuery()
+                        .eq(ProjectGroupMember::getGroupId, groupId)
+        );
+    }
+
+    private Result<Void> validateGroupDeleteDependencies(Long groupId) {
+        if (weeklyReportService.count(
+                Wrappers.<WeeklyReport>lambdaQuery()
+                        .eq(WeeklyReport::getGroupId, groupId)
+        ) > 0) {
+            return Result.fail(400, "该项目组已有关联周报，不能删除");
+        }
+
+        if (stageSubmissionService.count(
+                Wrappers.<StageSubmission>lambdaQuery()
+                        .eq(StageSubmission::getGroupId, groupId)
+        ) > 0) {
+            return Result.fail(400, "该项目组已有关联阶段提交，不能删除");
+        }
+
+        if (scoreRecordService.count(
+                Wrappers.<ScoreRecord>lambdaQuery()
+                        .eq(ScoreRecord::getGroupId, groupId)
+        ) > 0) {
+            return Result.fail(400, "该项目组已有关联成绩记录，不能删除");
+        }
+
+        if (defenseScheduleService.count(
+                Wrappers.<DefenseSchedule>lambdaQuery()
+                        .eq(DefenseSchedule::getGroupId, groupId)
+        ) > 0) {
+            return Result.fail(400, "该项目组已有关联答辩安排，不能删除");
+        }
+
+        return null;
+    }
+
+    private void clearGeneratedGroupReference(Long groupId) {
+        projectGroupApplicationService.update(
+                Wrappers.<ProjectGroupApplication>lambdaUpdate()
+                        .eq(ProjectGroupApplication::getGeneratedGroupId, groupId)
+                        .set(ProjectGroupApplication::getGeneratedGroupId, null)
+        );
     }
 }

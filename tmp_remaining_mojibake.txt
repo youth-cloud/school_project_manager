@@ -1,0 +1,13 @@
+1	F:\school_project_manager\frontend\src\views\defense-schedule\components\DefenseScheduleFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\edu-class\components\EduClassFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\edu-course\components\EduCourseFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\notice\components\NoticeFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\project-group\components\ProjectGroupFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\project-group-member\components\ProjectGroupMemberJoinDialog.vue
+1	F:\school_project_manager\frontend\src\views\project-topic\components\ProjectTopicFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\stage-submission\components\StageSubmissionFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\stage-task\components\StageTaskFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\sys-user\components\SysUserFormDialog.vue
+2	F:\school_project_manager\frontend\src\views\topic-application\TopicApplicationListView.vue
+1	F:\school_project_manager\frontend\src\views\training-batch\components\TrainingBatchFormDialog.vue
+1	F:\school_project_manager\frontend\src\views\weekly-report\components\WeeklyReportFormDialog.vue

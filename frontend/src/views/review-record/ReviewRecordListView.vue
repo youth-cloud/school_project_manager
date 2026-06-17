@@ -60,7 +60,7 @@ const isAdmin = computed(() => roles.value.includes('ADMIN'))
 
 const roleHint = computed(() => {
   if (isAdmin.value) return '管理员可查看全部评审记录'
-  if (isTeacher.value) return '教师可新增和维护自己评审的记录'
+  if (isTeacher.value) return '教师可新增并维护自己评审的记录'
   return '学生可查看自己项目对应的评审记录'
 })
 
@@ -95,7 +95,7 @@ const getSubmissionLabel = (id: string) => {
   const item = submissionOptions.value.find((option) => option.id === id)
   if (!item) return id
   const summary = item.summary?.trim() || '未填写摘要'
-  return `V${item.versionNo} · ${summary}`
+  return `V${item.versionNo} - ${summary}`
 }
 
 const getTeacherLabel = (id: string) => {
@@ -263,9 +263,14 @@ onMounted(() => {
   <div class="review-record-page">
     <el-card class="hero-card" shadow="never">
       <div class="hero-content">
-        <div>
+        <div class="hero-main">
           <div class="hero-badge">Review Record Management</div>
           <h1>评审记录管理</h1>
+        </div>
+        <div class="hero-side">
+          <div class="hero-side-label">当前视角</div>
+          <div class="hero-side-value">{{ roleHint }}</div>
+          <div class="hero-side-meta">共 {{ total }} 条记录</div>
         </div>
       </div>
     </el-card>
@@ -390,8 +395,8 @@ onMounted(() => {
           background
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          :current-page="pagination.current"
-          :page-size="pagination.size"
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
           :page-sizes="[10, 20, 30, 50]"
           @current-change="handleCurrentChange"
           @size-change="handleSizeChange"
@@ -455,26 +460,32 @@ onMounted(() => {
 .review-record-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
 }
 
 .hero-card,
 .filter-card,
 .table-card {
-  border-radius: 20px;
-  border: none;
-  box-shadow: 0 14px 32px rgb(57 118 201 / 8%);
+  border-radius: 24px;
+  border: 1px solid rgba(120, 148, 196, 0.14);
+  box-shadow: 0 18px 38px rgb(57 118 201 / 8%);
 }
 
 .hero-card {
-  background: linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #ffffff 100%);
+  background:
+    radial-gradient(circle at top right, rgba(116, 166, 255, 0.18), transparent 24%),
+    linear-gradient(135deg, #eef7ff 0%, #f8fbff 58%, #ffffff 100%);
 }
 
 .hero-content {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 20px;
+}
+
+.hero-main {
+  max-width: 760px;
 }
 
 .hero-badge {
@@ -489,15 +500,39 @@ onMounted(() => {
 }
 
 .hero-content h1 {
-  margin: 0 0 10px;
+  margin: 0;
   color: #1f2d3d;
-  font-size: 28px;
+  font-size: 30px;
 }
 
-.hero-content p {
-  margin: 0;
-  color: #6b7a90;
-  line-height: 1.8;
+.hero-side {
+  min-width: 240px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(120, 148, 196, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.hero-side-label {
+  color: #7b8ba1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-side-value {
+  margin-top: 10px;
+  color: #1f2d3d;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.hero-side-meta {
+  margin-top: 10px;
+  color: #7b8ba1;
+  line-height: 1.7;
 }
 
 .filter-form {
@@ -579,5 +614,15 @@ onMounted(() => {
   color: #344256;
   line-height: 1.9;
   white-space: pre-wrap;
+}
+
+@media (max-width: 1024px) {
+  .hero-content {
+    flex-direction: column;
+  }
+
+  .hero-side {
+    min-width: 0;
+  }
 }
 </style>

@@ -133,11 +133,6 @@ public class ProjectGroupApplicationController {
             return Result.fail(400, "课题不属于当前实训批次");
         }
 
-        if (projectGroupService.count(Wrappers.<ProjectGroup>lambdaQuery()
-                .eq(ProjectGroup::getTopicId, dto.getTopicId())) > 0) {
-            return Result.fail(400, "该课题已生成正式项目组，不能再发起建组申请");
-        }
-
         Set<Long> memberIds = normalizeMemberIds(currentUser.getUserId(), dto.getMemberIds());
         if (projectTopic.getMaxMembers() != null && memberIds.size() > projectTopic.getMaxMembers()) {
             return Result.fail(400, "申请成员数超过课题最大人数限制");
@@ -223,11 +218,6 @@ public class ProjectGroupApplicationController {
         }
 
         if ("APPROVED".equals(dto.getStatus())) {
-            if (projectGroupService.count(Wrappers.<ProjectGroup>lambdaQuery()
-                    .eq(ProjectGroup::getTopicId, existing.getTopicId())) > 0) {
-                return Result.fail(400, "该课题已存在正式项目组，不能重复审批通过");
-            }
-
             List<ProjectGroupApplicationMember> applicationMembers = projectGroupApplicationMemberService.list(
                     Wrappers.<ProjectGroupApplicationMember>lambdaQuery()
                             .eq(ProjectGroupApplicationMember::getApplicationId, existing.getId())

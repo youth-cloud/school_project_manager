@@ -68,6 +68,12 @@ const canDeleteStageTask = computed(() => {
   return roles.includes('ADMIN') || roles.includes('TEACHER')
 })
 
+const roleHint = computed(() => {
+  if (canEditStageTask.value) return '教师可发布和编辑'
+  if (canDeleteStageTask.value) return '管理员可删除'
+  return '当前账号只读'
+})
+
 const fetchStageTaskList = async () => {
   loading.value = true
   try {
@@ -242,9 +248,14 @@ onMounted(async () => {
   <div class="stage-task-page">
     <el-card class="hero-card" shadow="never">
       <div class="hero-content">
-        <div>
+        <div class="hero-main">
           <div class="hero-badge">Stage Task Management</div>
           <h1>阶段任务管理</h1>
+        </div>
+        <div class="hero-side">
+          <div class="hero-side-label">当前视角</div>
+          <div class="hero-side-value">{{ roleHint }}</div>
+          <div class="hero-side-meta">共 {{ total }} 条记录</div>
         </div>
       </div>
     </el-card>
@@ -294,10 +305,12 @@ onMounted(async () => {
     <el-card class="table-card" shadow="never">
       <template #header>
         <div class="table-header">
-          <div class="table-title">阶段任务列表</div>
+          <div>
+            <div class="table-title">阶段任务列表</div>
+          </div>
           <div class="header-tags">
             <el-tag type="info">共 {{ total }} 条</el-tag>
-            <el-tag v-if="canEditStageTask" type="success">教师可发布/编辑</el-tag>
+            <el-tag v-if="canEditStageTask" type="success">教师可发布和编辑</el-tag>
             <el-tag v-else-if="canDeleteStageTask" type="primary">管理员可删除</el-tag>
             <el-tag v-else type="warning">当前账号只读查看</el-tag>
           </div>
@@ -371,8 +384,8 @@ onMounted(async () => {
           background
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          :current-page="pagination.current"
-          :page-size="pagination.size"
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
           :page-sizes="[10, 20, 30, 50]"
           @current-change="handleCurrentChange"
           @size-change="handleSizeChange"
@@ -398,7 +411,7 @@ onMounted(async () => {
           </div>
           <div class="detail-tags">
             <el-tag :type="getStatusTagType(detailData.status)" effect="light">{{ getStatusLabel(detailData.status) }}</el-tag>
-            <el-tag type="primary" effect="light">第 {{ detailData.stageNo }} 阶段</el-tag>
+            <el-tag type="primary" effect="light">第{{ detailData.stageNo }} 阶段</el-tag>
           </div>
         </div>
 
@@ -428,26 +441,32 @@ onMounted(async () => {
 .stage-task-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 22px;
 }
 
 .hero-card,
 .filter-card,
 .table-card {
-  border-radius: 20px;
-  border: none;
-  box-shadow: 0 14px 32px rgb(57 118 201 / 8%);
+  border-radius: 24px;
+  border: 1px solid rgba(120, 148, 196, 0.14);
+  box-shadow: 0 18px 38px rgb(57 118 201 / 8%);
 }
 
 .hero-card {
-  background: linear-gradient(135deg, #eef6ff 0%, #f8fbff 58%, #ffffff 100%);
+  background:
+    radial-gradient(circle at top right, rgba(116, 166, 255, 0.18), transparent 24%),
+    linear-gradient(135deg, #eef6ff 0%, #f8fbff 58%, #ffffff 100%);
 }
 
 .hero-content {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 20px;
+}
+
+.hero-main {
+  max-width: 760px;
 }
 
 .hero-badge {
@@ -464,13 +483,37 @@ onMounted(async () => {
 .hero-content h1 {
   margin: 0 0 10px;
   color: #1f2d3d;
-  font-size: 28px;
+  font-size: 30px;
 }
 
-.hero-content p {
-  margin: 0;
-  color: #6b7a90;
-  line-height: 1.8;
+.hero-side {
+  min-width: 240px;
+  padding: 20px 22px;
+  border-radius: 20px;
+  border: 1px solid rgba(120, 148, 196, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.hero-side-label {
+  color: #7b8ba1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-side-value {
+  margin-top: 10px;
+  color: #1f2d3d;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.hero-side-meta {
+  margin-top: 10px;
+  color: #7b8ba1;
+  line-height: 1.7;
 }
 
 .filter-form {
@@ -559,5 +602,15 @@ onMounted(async () => {
   color: #344256;
   line-height: 1.9;
   white-space: pre-wrap;
+}
+
+@media (max-width: 1024px) {
+  .hero-content {
+    flex-direction: column;
+  }
+
+  .hero-side {
+    min-width: 0;
+  }
 }
 </style>

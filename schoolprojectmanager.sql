@@ -11,7 +11,7 @@
  Target Server Version : 80012 (8.0.12)
  File Encoding         : 65001
 
- Date: 06/06/2026 22:58:29
+ Date: 11/06/2026 22:47:48
 */
 
 SET NAMES utf8mb4;
@@ -158,6 +158,50 @@ CREATE TABLE `project_group`  (
   INDEX `idx_project_group_topic_id`(`topic_id` ASC) USING BTREE,
   INDEX `idx_project_group_leader_id`(`leader_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '项目组表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for project_group_application
+-- ----------------------------
+DROP TABLE IF EXISTS `project_group_application`;
+CREATE TABLE `project_group_application`  (
+  `id` bigint(20) NOT NULL COMMENT '申请ID',
+  `batch_id` bigint(20) NOT NULL COMMENT '批次ID',
+  `topic_id` bigint(20) NOT NULL COMMENT '课题ID',
+  `leader_id` bigint(20) NOT NULL COMMENT '申请组长ID',
+  `group_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '项目组名称',
+  `project_name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '项目名称',
+  `project_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '项目简介',
+  `repo_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓库地址',
+  `deploy_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '部署地址',
+  `apply_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '建组申请理由',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING APPROVED REJECTED CANCELED',
+  `reviewer_id` bigint(20) NULL DEFAULT NULL COMMENT '审核教师ID',
+  `review_comment` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '审核意见',
+  `review_time` datetime NULL DEFAULT NULL COMMENT '审核时间',
+  `generated_group_id` bigint(20) NULL DEFAULT NULL COMMENT '审批通过后生成的正式项目组ID',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_pga_batch_id`(`batch_id`) USING BTREE,
+  INDEX `idx_pga_topic_id`(`topic_id`) USING BTREE,
+  INDEX `idx_pga_leader_id`(`leader_id`) USING BTREE,
+  INDEX `idx_pga_status`(`status`) USING BTREE
+) ENGINE = MyISAM AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '项目组申请表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for project_group_application_member
+-- ----------------------------
+DROP TABLE IF EXISTS `project_group_application_member`;
+CREATE TABLE `project_group_application_member`  (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `application_id` bigint(20) NOT NULL COMMENT '申请单ID',
+  `user_id` bigint(20) NOT NULL COMMENT '学生ID',
+  `is_leader` tinyint(4) NOT NULL DEFAULT 0 COMMENT '是否组长 1是 0否',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_pg_app_member`(`application_id`, `user_id`) USING BTREE,
+  INDEX `idx_pg_app_member_user_id`(`user_id`) USING BTREE
+) ENGINE = MyISAM AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '项目组申请成员表' ROW_FORMAT = Fixed;
 
 -- ----------------------------
 -- Table structure for project_group_member
