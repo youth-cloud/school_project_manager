@@ -19,6 +19,7 @@ frontend/dist/
 
 # Backend
 backend/target/
+backend/uploads/
 
 # Environment files
 .env
@@ -27,6 +28,8 @@ backend/target/
 # Temporary files
 *.tmp
 *.swp
+tmp_*
+frontend/build-errors.txt
 
 # Maven wrapper cache (optional)
 .mvn/wrapper/maven-wrapper.jar
