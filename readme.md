@@ -44,7 +44,6 @@
 - 当前阶段：`MVP 可交付版本`
 - 前端最近一次 `npm run build` 已通过
 - 后端已完成多轮 `./mvnw -DskipTests package` 验证
-- GitHub Actions 已补齐基础 CI，可自动检查前后端构建是否通过
 
 ## 目录结构
 
@@ -139,18 +138,6 @@ docker compose up -d --build
 
 更详细的部署说明请看 [部署说明.md](./部署说明.md)。
 
-## GitHub 自动检查
-- 仓库已新增 `.github/workflows/ci.yml`
-- 当你 push 或发起 PR 时，GitHub Actions 会自动执行：
-- 前端 `npm ci && npm run build`
-- 后端 `./mvnw -DskipTests package`
-
-这就是 GitHub 自带的“提交后帮你检查项目能不能构建”的能力。
-
-当前 CI 属于 `基础构建校验`，后续如果你愿意，还可以再升级成：
-- 带 MySQL / Redis 的集成测试
-- Docker 镜像构建检查
-- PR 必过校验
 
 ## 相关文档
 - [项目进程.md](./项目进程.md)
