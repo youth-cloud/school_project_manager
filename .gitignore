@@ -46,6 +46,11 @@ uploads/
 /data/
 /schoolprojectmanagerwithdata.sql
 /学生主页.png
+
+# Private project planning documents
+/项目进程.md
+/可优化项.md
+
 *.sql.gz
 *.sql.zip
 *.dump

@@ -52,8 +52,6 @@ school_project_manager/
 ├─ docker-compose.yml        # Docker Compose 部署文件
 ├─ .env.example              # 部署环境变量示例
 ├─ 部署说明.md               # 部署文档
-├─ 项目进程.md               # 当前项目进度说明
-├─ 可优化项.md               # 后续优化方向
 ├─ schoolprojectmanager.sql  # 纯净库表结构
 └─ schoolprojectmanagerwithdata.sql  # 本地数据导出，不纳入版本控制
 ```
@@ -142,7 +140,5 @@ docker compose up -d --build
 
 
 ## 相关文档
-- [项目进程.md](./项目进程.md)
-- [可优化项.md](./可优化项.md)
 - [部署说明.md](./部署说明.md)
 - [计划书.md](./计划书.md)
