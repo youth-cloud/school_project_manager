@@ -1,35 +1,99 @@
-# IntelliJ IDEA
+# Editors and IDE metadata
 .idea/
 *.iml
-
-# VS Code
+*.iws
+*.ipr
 .vscode/
+.vs/
 
 # OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Logs
+# Logs and diagnostics
 *.log
 logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+frontend/build-errors.txt
+hs_err_pid*
+replay_pid*
+*.hprof
 
-# Frontend
-frontend/node_modules/
-frontend/dist/
+# Dependencies, build output and tool caches
+node_modules/
+dist/
+dist-ssr/
+target/
+coverage/
+.nyc_output/
+.vite/
+.cache/
+.eslintcache
+.prettiercache
+*.tsbuildinfo
+*.class
 
-# Backend
-backend/target/
-backend/uploads/
+# Runtime files and local exports (keep source assets and schema SQL)
+uploads/
+/output/
+/backups/
+/dumps/
+/data/
+/schoolprojectmanagerwithdata.sql
+/学生主页.png
+*.sql.gz
+*.sql.zip
+*.dump
+dump.rdb
+appendonlydir/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
 
-# Environment files
+# Local environment and private configuration; publish sanitized templates
 .env
 .env.*
+!.env.example
+!.env.*.example
+*.local
+/backend/src/main/resources/application-dev.yaml
+application-local.yml
+application-local.yaml
+application-local.properties
+application-*.local.yml
+application-*.local.yaml
+application-*.local.properties
+.npmrc
+.yarnrc.yml
+.m2/settings.xml
+
+# Private keys and keystores
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
 
 # Temporary files
 *.tmp
+*.temp
 *.swp
+*.swo
+*~
+*.bak
+*.orig
 tmp_*
-frontend/build-errors.txt
+tmp/
+temp/
 
 # Maven wrapper cache (optional)
 .mvn/wrapper/maven-wrapper.jar

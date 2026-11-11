@@ -55,7 +55,7 @@ school_project_manager/
 ├─ 项目进程.md               # 当前项目进度说明
 ├─ 可优化项.md               # 后续优化方向
 ├─ schoolprojectmanager.sql  # 纯净库表结构
-└─ schoolprojectmanagerwithdata.sql  # 演示数据
+└─ schoolprojectmanagerwithdata.sql  # 本地数据导出，不纳入版本控制
 ```
 
 ## 本地开发
@@ -71,8 +71,12 @@ school_project_manager/
 
 ```powershell
 cd backend
+Copy-Item .\src\main\resources\application-dev.yaml.example .\src\main\resources\application-dev.yaml
+$env:DB_PASSWORD="替换为本机数据库密码"
 .\mvnw.cmd spring-boot:run
 ```
+
+首次从仓库下载时复制开发配置模板；已有本地配置无需再次复制。实际的 `application-dev.yaml` 已忽略，请通过环境变量或本地配置保存连接信息。项目根目录的 `.env` 用于 Docker Compose，直接运行 Maven 时不会自动加载它。
 
 或先打包再运行：
 
@@ -106,7 +110,7 @@ npm run build
 
 ## 数据库初始化
 - 纯净环境：使用 `schoolprojectmanager.sql`
-- 演示环境：使用 `schoolprojectmanagerwithdata.sql`
+- 本地演示环境：可使用自行准备并脱敏的 `schoolprojectmanagerwithdata.sql`；该文件可能包含账号与业务记录，已忽略，仓库不提供数据导出
 - Docker Compose 首次启动时默认会自动导入 `schoolprojectmanager.sql`
 
 ## Docker 部署
